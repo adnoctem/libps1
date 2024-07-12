@@ -5,17 +5,17 @@ A library of open-source [MIT][license]-licensed [PowerShell][powershell] script
 ## ✨ TL;DR
 
 ```pwsh
-help ./scripts/move-regex.ps1 # Outputs the script documentation
+help .\scripts\move-regex.ps1 # Outputs the script documentation
 ```
 
 ### 🔃 Contributing
 
 Contributions are welcome via GitHub's Pull Requests. Fork the repository and implement your changes within the forked
-repository, after that you may submit a [Pull Request][gh_fork_pr_docs].
+repository, after that you may submit a [Pull Request][gh_pr_fork_docs].
 
 ### 📥 Maintainers
 
-This project is owned and maintained by [delta4x4 Geländesport Zubehör und Handels GmbH](https://delta4x4.com) refer to
+This project is owned and maintained by [FMJ Studios](https://github.com/fmjstudios) refer to
 the [`AUTHORS`](.github/AUTHORS) or [`CODEOWNERS`](.github/CODEOWNERS) for more information. You may also use the linked
 contact details to reach out directly.
 
@@ -38,3 +38,5 @@ _Assets provided by:_ **[Microsoft Corporation][microsoft]**
 [git_submodules]: https://git-scm.com/book/en/v2/Git-Tools-Submodules
 
 [git_subtree]: https://www.atlassian.com/git/tutorials/git-subtree
+
+[gh_pr_fork_docs]: https://docs.github.com/en/pull-requests/collaborating-with-pull-requests/proposing-changes-to-your-work-with-pull-requests/creating-a-pull-request-from-a-fork
