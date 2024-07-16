@@ -13,14 +13,18 @@
   License: MIT
 #>
 
+#Requires -Version 3
+
 # Parameter help description
 Param (
   [Parameter(Mandatory)]
-  [string] $sourcePath,
+  [string] $source,
 
-  [Parameter(Mandatory)]
+  # [Parameter(Mandatory)]
   [regex] $regEx,
 
-  [Parameter(Mandatory)]
-  [string] $destinationPath
+  # [Parameter(Mandatory)]
+  [string] $destianation
 )
+
+$rgx = [regex]::Escape($regEx)
