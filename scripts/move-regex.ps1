@@ -14,13 +14,30 @@
 #>
 
 # Parameter help description
-Param (
-  [Parameter(Mandatory)]
-  [string] $sourcePath,
+param (
+  [string] $Source = ""
 
-  [Parameter(Mandatory)]
-  [regex] $regEx,
+  # [Parameter(Mandatory = $true)]
+  # [regex] $RegEx,
 
-  [Parameter(Mandatory)]
-  [string] $destinationPath
+  # [Parameter(Mandatory = $true)]
+  # [string] $Destination
 )
+
+Import-Module "$PSScriptRoot\..\lib\log.psm1"
+
+$rgx = [regex]::Escape($regEx)
+
+try {
+  $path = Resolve-Path $Source
+
+  if (-not (Test-Path -Path $path)) {
+    Write-Host "Source path $Source was not found on the machine. Exiting"
+  }
+  else {
+    Write-Host "Found source path $Source"
+  }
+}
+catch {
+  Write-Host "WTF, had to catch it..."
+}
