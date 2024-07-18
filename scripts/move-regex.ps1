@@ -24,7 +24,7 @@ param (
   # [string] $Destination
 )
 
-Import-Module "$PSScriptRoot\..\lib\log.psm1"
+Import-Module "$PSScriptRoot\..\lib\log.psm1" -Verbose
 
 $rgx = [regex]::Escape($regEx)
 
@@ -32,12 +32,12 @@ try {
   $path = Resolve-Path $Source
 
   if (-not (Test-Path -Path $path)) {
-    Write-Host "Source path $Source was not found on the machine. Exiting"
+    Write-Log "Source path $Source was not found on the machine. Exiting" -Timestamps
   }
   else {
-    Write-Host "Found source path $Source"
+    Write-Log "Found source path $Source" -Timestamps
   }
 }
 catch {
-  Write-Host "WTF, had to catch it..."
+  Write-Log "WTF, had to catch it..."
 }

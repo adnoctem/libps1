@@ -1,4 +1,4 @@
-function Write-Output {
+function Write-Log {
   <#
         .SYNOPSIS
             Write log output to stderr or stdout.
@@ -11,60 +11,27 @@ function Write-Output {
   [CmdletBinding()]
   param (
     [Parameter(Mandatory = $true)]
-    [string]$Content
+    [string]$Message,
+
+    [Parameter]
+    [System.ConsoleColor]$Color = 'White',
+
+    [Parameter]
+    [switch]$Timestamps = $false
   )
 
   process {
+    $timestamp = (Get-Date).DateTime
+    $Content = "{0}" -f $Message
+
+    if ($Timestamps) {
+      $Content = "[{0}]: {1}" -f $timestamp, $Message
+    }
+
     Write-Host $Content
   }
 }
 
-# function Write-Log-Green {
-#   [CmdletBinding()]
-#   param (
-#     [Parameter(Mandatory = $true)]
-#     [string]$Content
-#   )
 
-#   process {
-#     Write-Host $Content -ForegroundColor Green
-#   }
-# }
 
-# function Write-Log-Red {
-#   [CmdletBinding()]
-#   param (
-#     [Parameter(Mandatory = $true)]
-#     [string]$Content
-#   )
-
-#   process {
-#     Write-Host $Content -ForegroundColor Red
-#   }
-# }
-
-# function Write-Log-Yellow {
-#   [CmdletBinding()]
-#   param (
-#     [Parameter(Mandatory = $true)]
-#     [string]$Content
-#   )
-
-#   process {
-#     Write-Host $Content -ForegroundColor Yellow
-#   }
-# }
-
-# function Write-Log-Cyan {
-#   [CmdletBinding()]
-#   param (
-#     [Parameter(Mandatory = $true)]
-#     [string]$Content
-#   )
-
-#   process {
-#     Write-Host $Content -ForegroundColor Cyan
-#   }
-# }
-
-Export-ModuleMember -Function Write-Output
+Export-ModuleMember -Function Write-Log
