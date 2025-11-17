@@ -34,9 +34,12 @@
 - [Copy/Move files based on RegEx](https://stackoverflow.com/questions/7893919/powershell-copy-move-files-based-on-a-regex-value-retaining-the-folder-structu)
 - [PowerShell: What is CmdLetBinding](https://blog.ironmansoftware.com/powershell-cmdlet-binding/)
 
+- [Configure AD Domain Controller on Server 2025](https://www.server-world.info/en/note?os=Windows_Server_2025&p=active_directory&f=2)
+- [Microsoft: Install AD Domain Services with PowerShell](https://learn.microsoft.com/en-us/windows-server/identity/ad-ds/deploy/install-active-directory-domain-services--level-100-)
 - [Set up a Domain Controller on Server 2025](https://www.windowspro.de/wolfgang-sommergut/domaenen-controller-windows-server-2025-installieren-32k-datenbank-nutzen)
 - [Set up a Domain Controller on Server 2025](https://it-learner.de/domaenencontroller-mit-windows-server-2025/)
 - [Set up Exchange on Server 2025](https://www.frankysweb.de/en/installation-exchange-2019-cu14-on-windows-server-2025/)
+- [Microsoft: CSS Exchange - HealthChecker](https://microsoft.github.io/CSS-Exchange/Diagnostics/HealthChecker/)
 - [PowerShell Remoting](https://learn.microsoft.com/en-us/powershell/scripting/learn/ps101/08-powershell-remoting?view=powershell-7.5)
 - [PowerShell - About Functions with Advanced Methods](https://learn.microsoft.com/en-us/powershell/module/microsoft.powershell.core/about/about_functions_advanced_methods?view=powershell-7.5)
 - [ADDS - Functional levels](https://learn.microsoft.com/en-us/windows-server/identity/ad-ds/active-directory-functional-levels)
