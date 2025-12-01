@@ -2,9 +2,11 @@
 .SYNOPSIS
   Set up Windows Server Active Directory Domain Services and promote the current machine to a Domain Controller.
 .DESCRIPTION
-	This PowerShell script ...
+  Installs AD DS, creates a new forest, and promotes the server to the first
+  domain controller for the supplied domain. Intended for lab or fresh domain
+  provisioning scenarios.
 .EXAMPLE
-  PS> ./setup-ad-controller.ps1 C:\Users\Markus\Images ^IMG_([0-9]{4})_([0-9]{2}).(jpg|jpeg|png|gif|svg|webp)$ D:\Storage\Images
+  PS> ./setup-ad-controller.ps1 -Domain 'contoso.local' -Mode Win2025
 .LINK
   https://github.com/adnoctem/libps1
 .NOTES

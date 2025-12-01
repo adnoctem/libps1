@@ -25,6 +25,8 @@
 
 ## 🔗 Links
 
+### General
+
 - [GitHub: ab14jain/PowerShell](https://github.com/ab14jain/PowerShell)
 - [msxfaq.de](https://www.msxfaq.de/code/powershell/psparam.htm)
 - [PowerShell special characters](https://www.neolisk.blog/posts/2009-07-23-powershell-special-characters/)
@@ -33,6 +35,8 @@
 - [PSScriptAnalyzer](https://learn.microsoft.com/de-de/powershell/utility-modules/psscriptanalyzer/overview?view=ps-modules)
 - [Copy/Move files based on RegEx](https://stackoverflow.com/questions/7893919/powershell-copy-move-files-based-on-a-regex-value-retaining-the-folder-structu)
 - [PowerShell: What is CmdLetBinding](https://blog.ironmansoftware.com/powershell-cmdlet-binding/)
+
+### Infrastructure
 
 - [Configure AD Domain Controller on Server 2025](https://www.server-world.info/en/note?os=Windows_Server_2025&p=active_directory&f=2)
 - [Microsoft: Install AD Domain Services with PowerShell](https://learn.microsoft.com/en-us/windows-server/identity/ad-ds/deploy/install-active-directory-domain-services--level-100-)
@@ -56,3 +60,14 @@
 - [Activate RDP remotely via PowerShell](https://nt4admins.de/powershell/rdp-aktivieren-remote-per-powershell/)
 - [Activate RDP remotely via PowerShell](https://sid-500.com/2021/03/22/enable-remote-desktop-remotely-with-powershell-enable-remotedesktop/)
 - [Activate RemoteDesktop Firewall Rules](https://www.der-windows-papst.de/2018/03/30/powershell-remotedesktop-aktivieren-und-firewall/)
+
+### E-Mails
+
+- [Managing an Outlook Mailbox with PowerShell](https://learn.microsoft.com/en-us/archive/msdn-magazine/2013/march/powershell-managing-an-outlook-mailbox-with-powershell)
+- [Export Outlook to .pst file](https://gist.github.com/timsonner/d9d9894ca8ee026d8f8285d51a5fdacc)
+- [Use PowerShell to move, delete and measure Outlook emails](https://gregcarriger.wordpress.com/2018/12/28/use-powershell-to-move-delete-and-measure-outlook-emails/)
+- [PowerShell Exchange Web Services (EWS) scripts](https://github.com/David-Barrett-MS/PowerShell-EWS-Scripts)
+- [Determine Outlook default folder when using different Language](https://stackoverflow.com/questions/32964591/powershell-get-where-outlook-by-default-stores-its-data-files-when-outlook-is-i)
+- [Example Script: Move Emails to archive folder](https://stackoverflow.com/questions/28880777/powershell-moving-emails-to-archive-folder-moves-all-but-last-email)
+- [Tips for writing cross-platform PowerShell scripts](https://powershell.org/2019/02/tips-for-writing-cross-platform-powershell-code/)
+- [PowerShell path separator based on OS](https://rakhesh.com/powershell/powershell-path-separator-based-on-os/)

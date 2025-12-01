@@ -1,4 +1,19 @@
 
+<#
+.SYNOPSIS
+  Install Windows features required for Microsoft Exchange Server.
+.DESCRIPTION
+  Adds the Windows Server roles and features Exchange depends on, preparing a
+  host for an on-premises Exchange installation.
+.EXAMPLE
+  PS> ./setup-exchange.ps1
+.LINK
+  https://github.com/adnoctem/libps1
+.NOTES
+  Author: Maximilian Gindorfer <info@mvprowess.com>
+  License: MIT
+#>
+
 $packages = @(
   'Server-Media-Foundation',
   'NET-Framework-45-Features',
