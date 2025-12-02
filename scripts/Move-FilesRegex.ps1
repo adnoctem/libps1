@@ -7,9 +7,9 @@
 .EXAMPLE
   PS> ./move-regex.ps1 C:\Users\Markus\Images ^IMG_([0-9]{4})_([0-9]{2}).(jpg|jpeg|png|gif|svg|webp)$ D:\Storage\Images
 .LINK
-  https://github.com/fmjstudios/pwshlib
+  https://github.com/adnoctem/pwshlib
 .NOTES
-  Author: Maximilian Gindorfer <info@fmj.dev>
+  Author: Maximilian Gindorfer <info@mvprowess.dev>
   License: MIT
 #>
 
@@ -33,11 +33,9 @@ try {
 
   if (-not (Test-Path -Path $path)) {
     Write-Log "Source path $Source was not found on the machine. Exiting" -Timestamps
-  }
-  else {
+  } else {
     Write-Log "Found source path $Source" -Timestamps
   }
-}
-catch {
+} catch {
   Write-Log "WTF, had to catch it..."
 }

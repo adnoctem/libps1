@@ -35,6 +35,13 @@ param (
   [string]$End
 )
 
+# ---- Module import ------------------------------------
+$root = Split-Path $PSScriptRoot -Parent
+$module = Join-Path -Path $root 'lib/libps1.psd1'
+
+Import-Module $module -Force
+# -------------------------------------------------------
+
 
 $Root = ""; # the root directory we're operating within
 $User = ""; # the users name
@@ -42,19 +49,19 @@ $Destination = ""; # the final destination path
 
 if ($PSVersionTable.OS -match "Windows") {
   $User = (whoami).Split([IO.Path]::DirectorySeparatorChar).Trim()[1]
-  $UserHome = $env:USERPROFILE ?? (Join-Path $env:HOMEDRIVE "Users" $User)
+  $UserHome = $env:USERPROFILE ?? (Join-Path -Path $env:HOMEDRIVE "Users" $User)
 } else {
   $User = (whoami).Trim()
-  $UserHome = ($env:HOME).EndsWith($User) ? $env:HOME : (Join-Path $env:HOME $User)
+  $UserHome = ($env:HOME).EndsWith($User) ? $env:HOME : (Join-Path -Path $env:HOME $User)
 }
 
-$Root = Join-Path $UserHome ".delta4x4"
-$Destination = Join-Path $Root "OutlookArchives"
+$Root = Join-Path -Path $UserHome ".delta4x4"
+$Destination = Join-Path -Path $Root "OutlookArchives"
 
 $DateStart = Get-Date -Date $Start
 $DateEnd = Get-Date -Date $End
 
-Write-Host $Destination
+Write-Output $Destination
 
 
 Add-Type -AssemblyName "Microsoft.Office.Interop.Outlook" -ErrorAction Stop
@@ -66,5 +73,5 @@ $store = $ns.Stores | Select-Object -First 1
 $folders = $store.GetRootFolder().Folders
 
 foreach ($folder in $folders) {
-  Write-Host "Copying $(folder.Name)"
+  Write-Output "Copying $(folder.Name)"
 }

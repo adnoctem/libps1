@@ -1,6 +1,13 @@
-# PowerShell Library <img src="https://raw.githubusercontent.com/PowerShell/PowerShell/master/assets/Powershell_256.png" alt="PowerShell Logo" align="right" width="225"/>
+<p align="center">
+    <!-- PowerShell -->
+    <picture>
+      <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/PowerShell/PowerShell/master/assets/Powershell_256.png">
+      <img src="https://raw.githubusercontent.com/PowerShell/PowerShell/master/assets/Powershell_256.png" width="225">
+    </picture>
+    <h1 align="center">libps1</h1>
+</p>
 
-A library of open-source [MIT][license]-licensed [PowerShell][powershell] scripts written and maintained by `FMJ Studios` for use with [PowerShell][powershell] Version 6 and above. Refer to Microsoft's in-depth [PowerShell Documentation][powershell_docs] for more information on how these scripts work. Scripts meant for direct execution by the user, an init system or other means of automation are located in the [`scripts`](scripts) directory. The [`lib`](lib) directory contains library scripts meant to be re-used across files or even different repositories with things like [Git Submodules][git_submodules] or _contrib_ scripts like [git_subtree]. You may of course take a look at other repositories of ours for tips on how to achieve re-use.
+A library of open-source [MIT][license]-licensed [PowerShell][powershell] scripts written and maintained by `Ad Noctem Collective` for use with [PowerShell][powershell] Version 6 and above. Refer to Microsoft's in-depth [PowerShell Documentation][powershell_docs] for more information on how these scripts work. Scripts meant for direct execution by the user, an init system or other means of automation are located in the [`scripts`](scripts) directory. The [`lib`](lib) directory contains library scripts meant to be re-used across files or even different repositories with things like [Git Submodules][git_submodules] or _contrib_ scripts like [git_subtree]. You may of course take a look at other repositories of ours for tips on how to achieve re-use.
 
 ## ✨ TL;DR
 
@@ -15,7 +22,7 @@ repository, after that you may submit a [Pull Request][gh_pr_fork_docs].
 
 ### 📥 Maintainers
 
-This project is owned and maintained by [FMJ Studios](https://github.com/fmjstudios) refer to
+This project is owned and maintained by [Ad Noctem Collective](https://github.com/adnoctem) refer to
 the [`AUTHORS`](.github/AUTHORS) or [`CODEOWNERS`](.github/CODEOWNERS) for more information. You may also use the linked
 contact details to reach out directly.
 

@@ -1,4 +1,4 @@
-# ✅ TODOs - FMJ Studios PowerShell Library
+# ✅ TODOs - libps1
 
 ## ➕ Additions
 
@@ -71,3 +71,15 @@
 - [Example Script: Move Emails to archive folder](https://stackoverflow.com/questions/28880777/powershell-moving-emails-to-archive-folder-moves-all-but-last-email)
 - [Tips for writing cross-platform PowerShell scripts](https://powershell.org/2019/02/tips-for-writing-cross-platform-powershell-code/)
 - [PowerShell path separator based on OS](https://rakhesh.com/powershell/powershell-path-separator-based-on-os/)
+
+### Repository
+
+- [Windows Administration Scripts](https://github.com/lazywinadmin/PowerShell)
+- [Awesome Windows 11 Scripts](https://github.com/awesome-windows11/windows11)
+- [500+ PowerShell Scripts](https://github.com/fleschutz/PowerShell)
+- [Windows Debloat Tools](https://github.com/LeDragoX/Win-Debloat-Tools/blob/main/src/scripts/Optimize-Privacy.ps1)
+- [Pester - PowerShell testing framework](https://github.com/pester/Pester/tree/main)
+- [`posh-git`](https://github.com/dahlbyk/posh-git)
+- [`scoop` CLI](https://github.com/ScoopInstaller/Scoop/tree/master)
+- [PSScriptAnalyzer](https://github.com/PowerShell/PSScriptAnalyzer)
+- [Run `pre-commit` PowerShell script](https://scriptingnerd.com/2024/11/01/running-a-powershell-script-on-your-code-before-a-git-commit-using-pre-commit/)
