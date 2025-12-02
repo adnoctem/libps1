@@ -83,3 +83,5 @@
 - [`scoop` CLI](https://github.com/ScoopInstaller/Scoop/tree/master)
 - [PSScriptAnalyzer](https://github.com/PowerShell/PSScriptAnalyzer)
 - [Run `pre-commit` PowerShell script](https://scriptingnerd.com/2024/11/01/running-a-powershell-script-on-your-code-before-a-git-commit-using-pre-commit/)
+- [PSResourceGet supported repositories](https://learn.microsoft.com/en-us/powershell/gallery/powershellget/supported-repositories?view=powershellget-3.x)
+- [Getting started with PowerShell gallery](https://learn.microsoft.com/en-us/powershell/gallery/getting-started?view=powershellget-3.x)
