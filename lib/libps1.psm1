@@ -15,7 +15,19 @@ foreach ($file in $files) {
 }
 
 $publicFunctions = @(
-  'Write-Log'
+  # log.ps1
+  'Write-Log',
+
+  # host.ps1
+  'Show-HostName'
+
+  # path.ps1
+  'Test-PathExists',
+  'Get-BasePath',
+  'Get-LogPath',
+  'Get-DataPath',
+  'Get-TemporaryPath',
+  'Get-NewPath'
 )
 
 Export-ModuleMember -Function $publicFunctions

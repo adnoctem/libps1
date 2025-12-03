@@ -55,7 +55,17 @@
   # Modules that must be imported into the global environment prior to importing this module
   RequiredModules       = @(
     @{ ModuleName = "PSWindowsUpdate"; ModuleVersion = '2.2.1.5' },
-    @{ ModuleName = "Microsoft.Office.Interop.Outlook"; ModuleVersion = '15.0.4797.1004' }
+    @{ ModuleName = "PSReadLine"; ModuleVersion = '2.4.5' },
+    @{ ModuleName = "PSWritePDF"; ModuleVersion = '0.0.20' },
+    @{ ModuleName = "PSWriteOffice"; ModuleVersion = '0.2.0' },
+    @{ ModuleName = "Transferetto"; ModuleVersion = '1.0.0' },
+    # ref: https://learn.microsoft.com/de-de/powershell/dsc/overview/decisionmaker?view=dsc-1.1
+    @{ ModuleName = "ActiveDirectoryDsc"; ModuleVersion = '6.7.0' },
+    @{ ModuleName = "ComputerManagementDsc"; ModuleVersion = '10.0.0' },
+    @{ ModuleName = "SystemLocaleDsc"; ModuleVersion = '1.1.0.0' },
+    @{ ModuleName = "Microsoft365DSC"; ModuleVersion = '1.25.1112.1' },
+    @{ ModuleName = "xDnsServer"; ModuleVersion = '2.0.0' },
+    @{ ModuleName = "NTFSSecurity"; ModuleVersion = '4.2.5' }
   )
 
   # Assemblies that must be loaded prior to importing this module
@@ -98,7 +108,7 @@
   PrivateData           = @{
     PSData = @{
       # Tags applied to this module. These help with module discovery in online galleries.
-      Tags                     = @('PowerShell', 'PSEdition_Core', 'PSEdition_Desktop', 'Library', 'Windows', 'Linux', 'MacOS', 'administration', 'installation', 'configuration', 'management')
+      Tags                     = @('PowerShell', 'PSEdition_Core', 'PSEdition_Desktop', 'Library', 'Windows', 'Linux', 'MacOS', 'administration', 'installation', 'configuration', 'management', 'dsc')
 
       # A URL to the license for this module.
       LicenseUri               = 'https://opensource.org/license/mit'

@@ -1,3 +1,5 @@
+#Requires -Version 5.0
+
 <#
 .SYNOPSIS
   Move Outlook messages received between two dates into an archive folder.
@@ -37,34 +39,25 @@ param (
 
 # ---- Module import ------------------------------------
 $root = Split-Path $PSScriptRoot -Parent
-$module = Join-Path -Path $root 'lib/libps1.psd1'
+$module = Join-Path -Path $root 'lib/libps1.psm1'
 
 Import-Module $module -Force
 # -------------------------------------------------------
 
+# ---- Assembly import ------------------------------------
+$_searchPath = 'C:\Windows\assembly\GAC_MSIL\Microsoft.Office.Interop.Outlook'
+$_searchFilter = 'Microsoft.Office.Interop.Outlook.dll'
+$_assembly = Get-ChildItem -LiteralPath $_searchPath `
+  -Filter $_searchFilter `
+  -Recurse |
+  Select-Object -ExpandProperty FullName -Last 1
 
-$Root = ""; # the root directory we're operating within
-$User = ""; # the users name
-$Destination = ""; # the final destination path
-
-if ($PSVersionTable.OS -match "Windows") {
-  $User = (whoami).Split([IO.Path]::DirectorySeparatorChar).Trim()[1]
-  $UserHome = $env:USERPROFILE ?? (Join-Path -Path $env:HOMEDRIVE "Users" $User)
-} else {
-  $User = (whoami).Trim()
-  $UserHome = ($env:HOME).EndsWith($User) ? $env:HOME : (Join-Path -Path $env:HOME $User)
-}
-
-$Root = Join-Path -Path $UserHome ".delta4x4"
-$Destination = Join-Path -Path $Root "OutlookArchives"
-
-$DateStart = Get-Date -Date $Start
-$DateEnd = Get-Date -Date $End
-
-Write-Output $Destination
+Add-Type -AssemblyName $_assembly -ErrorAction Stop
+# -------------------------------------------------------
 
 
-Add-Type -AssemblyName "Microsoft.Office.Interop.Outlook" -ErrorAction Stop
+$destination = Get-NewPath -Path 'OutlookArchive'
+
 $_outlook = New-Object -com outlook.application
 
 $ns = $_outlook.GetNamespace("MAPI")
@@ -75,3 +68,5 @@ $folders = $store.GetRootFolder().Folders
 foreach ($folder in $folders) {
   Write-Output "Copying $(folder.Name)"
 }
+
+Write-Output $destination

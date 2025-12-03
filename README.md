@@ -12,7 +12,14 @@ A library of open-source [MIT][license]-licensed [PowerShell][powershell] script
 ## ✨ TL;DR
 
 ```pwsh
-help .\scripts\move-regex.ps1 # Outputs the script documentation
+# initialize the project (download dependencies)
+.\bootstrap.ps1
+
+# run a script
+.\scripts\Archive-OutlookMails.ps1
+
+# output the script documentation
+help .\scripts\Setup-Exchange.ps1
 ```
 
 ### 🔃 Contributing

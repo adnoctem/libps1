@@ -1,3 +1,27 @@
+#Requires -Version 5.0
+
+function Show-Color {
+  <#
+    .SYNOPSIS
+      Show the available colors to print text in.
+    .DESCRIPTION
+      Outputs the available colors for use within the -...Color options. These
+      are the properties of the System.ConsoleColor enum.
+    .EXAMPLE
+      PS> Show-LogColor
+    .LINK
+      https://github.com/adnoctem/libps1/lib/log.ps1
+    .NOTES
+      Author: Maximilian Gindorfer <info@mvprowess.com>
+      License: MIT
+  #>
+
+  [enum]::GetValues([System.ConsoleColor]) | ForEach-Object {
+    Write-Host $_ -ForegroundColor $_
+  }
+}
+
+
 function Write-Log {
   # ref: https://learn.microsoft.com/en-us/powershell/utility-modules/psscriptanalyzer/using-scriptanalyzer?view=ps-modules#suppressing-rules
   [Diagnostics.CodeAnalysis.SuppressMessageAttribute("PSAvoidUsingWriteHost", "", Justification = "Write-Output does not support '-ForegroundColor'.")]
