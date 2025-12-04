@@ -16,12 +16,14 @@
 
 # ---- Module import ------------------------------------
 $root = Split-Path $PSScriptRoot -Parent
-$module = Join-Path -Path $root 'lib/libps1.psm1'
+$module = Join-Path -Path $root 'lib/libps1.psd1'
 
-Import-Module $module -Force
+Import-Module $module -Force -Verbose
 # -------------------------------------------------------
 
 # Write-Log -Message "This is a test!" -Color Cyan -Timestamps
 
 
 Write-Log "This is some bs" -Color Cyan -Timestamps
+
+ConvertFrom-HTMLtoWord -FileHTML '/tmp/test.html' -OutputFile '/tmp/test-out.docx' -Show | Out-Null

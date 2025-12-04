@@ -55,7 +55,7 @@
   # Modules that must be imported into the global environment prior to importing this module
   RequiredModules       = @(
     @{ ModuleName = "PSWindowsUpdate"; ModuleVersion = '2.2.1.5' },
-    @{ ModuleName = "PSReadLine"; ModuleVersion = '2.4.5' },
+    # @{ ModuleName = "PSReadLine"; ModuleVersion = '2.4.5' },
     @{ ModuleName = "PSWritePDF"; ModuleVersion = '0.0.20' },
     @{ ModuleName = "PSWriteOffice"; ModuleVersion = '0.2.0' },
     @{ ModuleName = "Transferetto"; ModuleVersion = '1.0.0' },
