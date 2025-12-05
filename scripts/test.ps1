@@ -18,12 +18,16 @@
 $root = Split-Path $PSScriptRoot -Parent
 $module = Join-Path -Path $root 'lib/libps1.psd1'
 
-Import-Module $module -Force -Verbose
+# Import-Module $module -Force -Verbose
+Import-Module "$PSScriptRoot\..\lib\libps1.psd1"
 # -------------------------------------------------------
 
 # Write-Log -Message "This is a test!" -Color Cyan -Timestamps
 
-
 Write-Log "This is some bs" -Color Cyan -Timestamps
+Write-Log "`$root would have been: $root"
+Write-Log "`$module would have been: $module"
+Write-Log "Now we're using $PSScriptRoot\..\lib\libps1.psd1"
 
-ConvertFrom-HTMLtoWord -FileHTML '/tmp/test.html' -OutputFile '/tmp/test-out.docx' -Show | Out-Null
+# ConvertFrom-HTMLtoWord -FileHTML '/tmp/test.html' -OutputFile '/tmp/test-out.docx' -Show | Out-Null
+Convert-HTMLToPDF -FilePath '/tmp/test.html' -OutputFilePath '/tmp/test-out.pdf'
