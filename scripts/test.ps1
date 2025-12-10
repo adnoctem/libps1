@@ -29,5 +29,5 @@ Write-Log "`$root would have been: $root"
 Write-Log "`$module would have been: $module"
 Write-Log "Now we're using $PSScriptRoot\..\lib\libps1.psd1"
 
-# ConvertFrom-HTMLtoWord -FileHTML '/tmp/test.html' -OutputFile '/tmp/test-out.docx' -Show | Out-Null
-Convert-HTMLToPDF -FilePath '/tmp/test.html' -OutputFilePath '/tmp/test-out.pdf'
+ConvertFrom-HTMLtoWord -FileHTML "C:\Users\Admin\tmp\Pressemitteilung\test.html" -OutputFile "C:\Users\Admin\tmp\Pressemitteilung\test.docx" -Show | Out-Null
+# Convert-HTMLToPDF -FilePath '/tmp/test.html' -OutputFilePath '/tmp/test-out.pdf'

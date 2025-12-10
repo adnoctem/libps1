@@ -85,3 +85,9 @@
 - [Run `pre-commit` PowerShell script](https://scriptingnerd.com/2024/11/01/running-a-powershell-script-on-your-code-before-a-git-commit-using-pre-commit/)
 - [PSResourceGet supported repositories](https://learn.microsoft.com/en-us/powershell/gallery/powershellget/supported-repositories?view=powershellget-3.x)
 - [Getting started with PowerShell gallery](https://learn.microsoft.com/en-us/powershell/gallery/getting-started?view=powershellget-3.x)
+
+### Windows Updates
+
+- [Automate Windows Updates with PowerShell](https://www.reddit.com/r/sysadmin/comments/1j5c810/how_to_update_windows_store_apps_via_commandline/)
+- [Use Windows CIM to automate Updates with PowerShell](https://gist.github.com/wise-io/70687623206a4175ca591bccc8971e7f)
+- [Make use of PSWindowsUpdate](https://www.windowspro.de/wolfgang-sommergut/windows-updates-powershell-pswindowsupdate-auflisten-herunterladen-installieren)
