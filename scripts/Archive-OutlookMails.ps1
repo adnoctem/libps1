@@ -3,14 +3,18 @@
 <#
 .SYNOPSIS
   Move Outlook messages received between two dates into an archive folder.
+
 .DESCRIPTION
   Uses Outlook's COM interface to find items by ReceivedTime and relocate them
   to the specified archive folder. Designed for batch clean-up and retention
   workflows where a fixed date range needs to be archived.
+
 .EXAMPLE
   PS> ./archive-outlook.ps1 -StartDate '2024-01-01' -EndDate '2024-03-31' -ArchiveFolder 'Archive/2024 Q1'
+
 .LINK
   https://github.com/adnoctem/libps1
+
 .NOTES
   Author: Maximilian Gindorfer <info@mvprowess.com>
   License: MIT
