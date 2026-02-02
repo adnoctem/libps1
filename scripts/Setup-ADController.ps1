@@ -23,7 +23,7 @@ param (
   )]
   [ValidatePattern("^[A-Za-z0-9-]{1,63}\.[A-Za-z]{2,8}$")]
   [string]$Domain,
-  
+
   # ref: https://learn.microsoft.com/en-us/powershell/module/addsdeployment/install-addsforest?view=windowsserver2025-ps#-forestmode
   # ref: https://learn.microsoft.com/en-us/powershell/module/addsdeployment/install-addsforest?view=windowsserver2025-ps#-domainmode
   [Parameter(
@@ -35,7 +35,7 @@ param (
   [string]$Mode = "Win2025"
 )
 
-$packages = @('AD-Domain-Services')
+$packages = @('AD-Domain-Services', 'VolumeActivation')
 $dsrm = Read-Host -AsSecureString -Prompt "Enter an Active Directory DSRM password"
 
 
