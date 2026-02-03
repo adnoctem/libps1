@@ -91,3 +91,19 @@
 - [Automate Windows Updates with PowerShell](https://www.reddit.com/r/sysadmin/comments/1j5c810/how_to_update_windows_store_apps_via_commandline/)
 - [Use Windows CIM to automate Updates with PowerShell](https://gist.github.com/wise-io/70687623206a4175ca591bccc8971e7f)
 - [Make use of PSWindowsUpdate](https://www.windowspro.de/wolfgang-sommergut/windows-updates-powershell-pswindowsupdate-auflisten-herunterladen-installieren)
+
+### Windows Registry
+
+- [Guide to understanding ProgIDs and File Type Associations](https://setuserfta.com/guide-to-understanding-progids-and-file-type-associations/)
+- [GitHub: DanysysTeam/PS-SFTA](https://github.com/DanysysTeam/PS-SFTA)
+- [GitHub: DanysysTeam/PS-TBPin](https://github.com/DanysysTeam/PS-TBPin)
+
+### Windows Printing
+
+- [Printing Documents using PowerShell](https://pipe.how/invoke-print/)
+- [Streamlining batch PDF printing](https://medium.com/@mayberryjalin/powershell-streamlining-batch-pdf-printing-301f25c1cd03)
+- [Trying to send PDF print jobs to a network printer](https://community.spiceworks.com/t/trying-to-send-pdf-print-jobs-to-a-network-printer/957742)
+
+## ⚠️ Issues
+
+- [DISM CmdLets not working in PowerShell 7](https://github.com/PowerShell/PowerShell/issues/15428)
