@@ -1,4 +1,4 @@
-#Requires -Version 5.0
+#Requires -Version 2.0
 
 <#
 .SYNOPSIS
@@ -63,8 +63,10 @@ param (
 Import-Module ActiveDirectory -Force
 # -------------------------------------------------------
 
+$resources = @('Users', 'Computers', 'Groups')
+
 $properties = @{
-  Users     = @(
+  $resources[0] = @(
     # Windows AD specific
     "sAMAccountName",
     "userPrincipalName",
@@ -91,7 +93,7 @@ $properties = @{
     "telephoneNumber"
   )
 
-  Computers = @(
+  $resources[1] = @(
     # Windows AD specific
     "cn",
     "name",
@@ -109,7 +111,7 @@ $properties = @{
     "operatingSystemVersion"
   )
 
-  Groups    = @(
+  $resources[2] = @(
     # Windows AD specific
     "cn",
     "name",
@@ -124,7 +126,11 @@ $properties = @{
 }
 
 
-$obj = @{};
+$obj = [PSCustomObject]@{
+  $resources[0] = $null
+  $resources[1] = $null
+  $resources[2] = $null
+}
 
 switch ($Resource) {
   "Users" {
@@ -151,15 +157,29 @@ switch ($Resource) {
 #
 # ref: https://stackoverflow.com/questions/39825440/check-if-a-path-is-a-folder-or-a-file-in-powershell
 if (Test-Path -Path $OutputPath -PathType Leaf) {
-  # It's a file
   Throw("OutputPath is a file. Please provide a directory path.")
 }
 
 # Output each property as a separate CSV file
-$obj | Get-Member -MemberType Property | ForEach-Object {
+# $obj | Get-Member -MemberType Property | ForEach-Object {
+#   $name = $_.Name
+#   $data = $obj.$name
+
+# $output = Join-Path -Path $OutputPath -ChildPath "AD-$name.csv"
+# $data | Export-Csv -Path $output -NoTypeInformation -Encoding $Encoding
+# }
+
+$obj.PSObject.Properties | ForEach-Object {
   $name = $_.Name
-  $data = $obj.$name
+  # $data = $prop.Value
 
   $output = Join-Path -Path $OutputPath -ChildPath "AD-$name.csv"
-  $data | Export-Csv -Path $output -NoTypeInformation -Encoding $Encoding
+  $_.Value | Export-Csv -Path $output -NoTypeInformation -Encoding $Encoding
 }
+
+# Write-Output "Printing psobject properties..."
+# $obj.psobject.Properties | Select-Object Name, MemberType, Value
+
+# Write-Output "Printing pscustomboject properties..."
+# $data = [pscustomobject]$obj
+# $data.psobject.Properties | Select-Object Name, MemberType, Value

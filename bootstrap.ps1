@@ -10,28 +10,29 @@ param(
 # ---- Configure module -----------------------------------------
 
 $manifestPath = Join-Path -Path $PSScriptRoot 'lib/libps1.psd1'
-$manifest = Test-ModuleManifest -Path $manifestPath
+$manifest = Test-ModuleManifest -Path $manifestPath -ErrorAction SilentlyContinue
 
-Write-Host "Using manifest: $manifest"
+Write-Output "Using manifest: $manifest"
 
 foreach ($mod in $manifest.RequiredModules) {
   # RequiredModules entries can be strings or hashtables
   if ($mod -is [string]) {
     $name = $mod
     $version = $null
-  } else {
+  }
+  else {
     $name = $mod.Name
     $version = $mod.ModuleVersion
   }
 
-  Write-Host "Ensuring module '$name' is installed.." -ForegroundColor Yellow
+  Write-Output "Ensuring module '$name' is installed.." -ForegroundColor Yellow
 
   $installed = Get-Module -ListAvailable -Name $name |
-    Sort-Object Version -Descending |
-      Select-Object -First 1
+  Sort-Object Version -Descending |
+  Select-Object -First 1
 
   if ($installed -and (!$version -or $installed.Version -ge [version]$version)) {
-    Write-Host "    -> OK (found $($installed.Version))"
+    Write-Output "    -> OK (found $($installed.Version))"
     continue
   }
 
@@ -44,7 +45,7 @@ foreach ($mod in $manifest.RequiredModules) {
 
   if ($version) { $params['RequiredVersion'] = $version }
   if (-not $Force) {
-    Write-Host "    -> Installing module: $name at version: $version (use -Force to skip prompts)"
+    Write-Output "    -> Installing module: $name at version: $version (use -Force to skip prompts)"
   }
 
   Install-Module @params
@@ -52,4 +53,4 @@ foreach ($mod in $manifest.RequiredModules) {
 
 # ---------------------------------------------------------------
 
-Write-Host "Successfully processed all RequiredModules!" -ForegroundColor Yellow
+Write-Output "Successfully processed all RequiredModules!" -ForegroundColor Yellow
