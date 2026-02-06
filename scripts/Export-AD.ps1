@@ -29,6 +29,9 @@
   License: MIT
 #>
 
+# Set-Variable -Name resources -Value @('Users', 'Computers', 'Groups') -Option ReadOnly
+# Set-Variable -Name resourcesAll -Value 'All' -Option ReadOnly
+
 # Parameters
 param (
   [Parameter(
@@ -43,9 +46,8 @@ param (
     Mandatory = $false,
     HelpMessage = "The resource to export from Active Directory."
   )]
-  [ValidateSet("Users", "Computers", "Groups", "All")]
-  [string]$Resource = "Users",
-
+  [ValidateSet('Users', 'Computers', 'Groups', 'All')]
+  [string]$Resource = 'All',
 
   [Parameter(
     Position = 2,
@@ -63,10 +65,8 @@ param (
 Import-Module ActiveDirectory -Force
 # -------------------------------------------------------
 
-$resources = @('Users', 'Computers', 'Groups')
-
-$properties = @{
-  $resources[0] = @(
+$properties = [PSCustomObject]@{
+  Users     = @(
     # Windows AD specific
     "sAMAccountName",
     "userPrincipalName",
@@ -93,7 +93,7 @@ $properties = @{
     "telephoneNumber"
   )
 
-  $resources[1] = @(
+  Computers = @(
     # Windows AD specific
     "cn",
     "name",
@@ -111,7 +111,7 @@ $properties = @{
     "operatingSystemVersion"
   )
 
-  $resources[2] = @(
+  Groups    = @(
     # Windows AD specific
     "cn",
     "name",
@@ -125,32 +125,47 @@ $properties = @{
   )
 }
 
+$fmt = (Get-Culture).TextInfo
 
-$obj = [PSCustomObject]@{
-  $resources[0] = $null
-  $resources[1] = $null
-  $resources[2] = $null
+# Initialize an empty object to hold the results
+# Distinguish between PowerShell 3 and later versions since [PSCustomObject] is not available in PS2
+if ($PSVersionTable.PSVersion.Major -ge 3) {
+  $obj = [PSCustomObject]@{
+    Users     = $null
+    Computers = $null
+    Groups    = $null
+  }
+}
+else {
+  $obj = New-Object PSObject -Property @{
+    Users     = $null
+    Computers = $null
+    Groups    = $null
+  }
 }
 
 switch ($Resource) {
-  "Users" {
-    $obj.Users = Get-ADUser -Filter * -Properties $properties.Users
-  }
-  "Computers" {
-    $obj.Computers = Get-ADComputer -Filter * -Properties $properties.Computers
-  }
-  "Groups" {
-    $obj.Groups = Get-ADGroup -Filter * -Properties $properties.Groups
-  }
-  "All" {
+  'All' {
     $obj.Users = Get-ADUser -Filter * -Properties $properties.Users
     $obj.Computers = Get-ADComputer -Filter * -Properties $properties.Computers
     $obj.Groups = Get-ADGroup -Filter * -Properties $properties.Groups
   }
 
-  # Default {
+  'Users' {
+    $obj.Users = Get-ADUser -Filter * -Properties $properties.Users
+  }
 
-  # }
+  'Computers' {
+    $obj.Computers = Get-ADComputer -Filter * -Properties $properties.Computers
+  }
+
+  'Groups' {
+    $obj.Groups = Get-ADGroup -Filter * -Properties $properties.Groups
+  }
+
+  Default {
+    Throw("Invalid resource specified. Use one of: ('Users', 'Computers', 'Groups', 'All').")
+  }
 }
 
 # ensure OutputPath is a directory
@@ -160,26 +175,15 @@ if (Test-Path -Path $OutputPath -PathType Leaf) {
   Throw("OutputPath is a file. Please provide a directory path.")
 }
 
-# Output each property as a separate CSV file
-# $obj | Get-Member -MemberType Property | ForEach-Object {
-#   $name = $_.Name
-#   $data = $obj.$name
-
-# $output = Join-Path -Path $OutputPath -ChildPath "AD-$name.csv"
-# $data | Export-Csv -Path $output -NoTypeInformation -Encoding $Encoding
-# }
-
 $obj.PSObject.Properties | ForEach-Object {
   $name = $_.Name
-  # $data = $prop.Value
+  $data = $_.Value
 
-  $output = Join-Path -Path $OutputPath -ChildPath "AD-$name.csv"
-  $_.Value | Export-Csv -Path $output -NoTypeInformation -Encoding $Encoding
+  if ($data -ne $null) {
+    $output = Join-Path -Path $OutputPath -ChildPath "AD-$($fmt.ToTitleCase($name)).csv"
+    $data | Export-Csv -Path $output -NoTypeInformation -Encoding $Encoding -Delimiter ';'
+  }
+  else {
+    Write-Error "No data found for resource 'AD-$($fmt.ToTitleCase($name)).csv'. Skipping export for this resource."
+  }
 }
-
-# Write-Output "Printing psobject properties..."
-# $obj.psobject.Properties | Select-Object Name, MemberType, Value
-
-# Write-Output "Printing pscustomboject properties..."
-# $data = [pscustomobject]$obj
-# $data.psobject.Properties | Select-Object Name, MemberType, Value
