@@ -21,6 +21,7 @@ function Convert-Quote {
     License: MIT
     #>
 
+  [OutputType([void])]
   param (
     [Parameter(Mandatory = $true)]
     [string]$Path,

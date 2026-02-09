@@ -7,6 +7,8 @@
 - [ ] Add scripts to mitigate [Public Firewall Profile Bug in Defender 2025](https://jans.cloud/2025/03/unidentified-network-public-firewall-profile-bei-windows-server-2025-domain-controller/)
 - [ ] Add scripts for [Terminal Server configuration](https://www.server-world.info/en/note?os=Windows_Server_2025&p=remotedesktop&f=1) and the associated [Defender rules](https://gist.github.com/asheroto/530748b3bf0528cc4805d652b612f81f)
 - [ ] Create [WOL-tooling](https://www.pdq.com/blog/wake-on-lan-wol-magic-packet-powershell/)
+- [ ] Create a dowloader for [VC++ Redistributables](https://learn.microsoft.com/de-de/cpp/windows/latest-supported-vc-redist?view=msvc-170)
+- [ ] [How to set return type in PowerShell](https://stackoverflow.com/questions/64891846/specify-function-return-type)
 
 ## ✏️ Planned Changes
 
@@ -22,6 +24,7 @@
 - [GitHub: jrussellfreelance](https://github.com/jrussellfreelance/powershell-scripts)
 - [GitHub: nickrod158/PowerShell-Scripts](https://github.com/nickrod518/PowerShell-Scripts/tree/master)
 - [GitHub: farag2/Utilities](https://github.com/farag2/Utilities/tree/master)
+- [GitHub: nightroman/Invoke-Build](https://github.com/nightroman/Invoke-Build)
 
 ## 🔗 Links
 
@@ -35,6 +38,7 @@
 - [PSScriptAnalyzer](https://learn.microsoft.com/de-de/powershell/utility-modules/psscriptanalyzer/overview?view=ps-modules)
 - [Copy/Move files based on RegEx](https://stackoverflow.com/questions/7893919/powershell-copy-move-files-based-on-a-regex-value-retaining-the-folder-structu)
 - [PowerShell: What is CmdLetBinding](https://blog.ironmansoftware.com/powershell-cmdlet-binding/)
+- [Explore self-elevating PowerShell scripts](https://www.reddit.com/r/PowerShell/comments/d7y0zp/self_elevating_powershell_script/)
 
 ### Infrastructure
 
@@ -60,6 +64,8 @@
 - [Activate RDP remotely via PowerShell](https://nt4admins.de/powershell/rdp-aktivieren-remote-per-powershell/)
 - [Activate RDP remotely via PowerShell](https://sid-500.com/2021/03/22/enable-remote-desktop-remotely-with-powershell-enable-remotedesktop/)
 - [Activate RemoteDesktop Firewall Rules](https://www.der-windows-papst.de/2018/03/30/powershell-remotedesktop-aktivieren-und-firewall/)
+- [Explore `PSRename`](https://github.com/mgajda83/PSRename)
+- [Install `winget` via the Command-Line](https://stackoverflow.com/questions/74166150/install-winget-by-the-command-line-powershell)
 
 ### E-Mails
 

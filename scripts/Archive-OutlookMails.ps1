@@ -54,7 +54,7 @@ $_searchFilter = 'Microsoft.Office.Interop.Outlook.dll'
 $_assembly = Get-ChildItem -LiteralPath $_searchPath `
   -Filter $_searchFilter `
   -Recurse |
-  Select-Object -ExpandProperty FullName -Last 1
+Select-Object -ExpandProperty FullName -Last 1
 
 Add-Type -AssemblyName $_assembly -ErrorAction Stop
 # -------------------------------------------------------

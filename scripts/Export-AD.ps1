@@ -1,4 +1,5 @@
 #Requires -Version 2.0
+#Requires -Module ActiveDirectory
 
 <#
 .SYNOPSIS

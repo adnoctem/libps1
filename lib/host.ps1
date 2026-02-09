@@ -18,6 +18,7 @@ function Show-HostName {
     Show-HostName -BuildingId H00 -MachineType VM -WorkloadPurpose DC -StartIndex 10 -Count 3
   #>
 
+  [OutputType([string])]
   [CmdletBinding()]
   param (
     # Company code (fixed to OFC for you, but overridable)

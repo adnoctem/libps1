@@ -58,14 +58,7 @@
     # @{ ModuleName = "PSReadLine"; ModuleVersion = '2.4.5' },
     @{ ModuleName = "PSWritePDF"; ModuleVersion = '0.0.20' },
     @{ ModuleName = "PSWriteOffice"; ModuleVersion = '0.2.0' },
-    @{ ModuleName = "Transferetto"; ModuleVersion = '1.0.0' },
-    # ref: https://learn.microsoft.com/de-de/powershell/dsc/overview/decisionmaker?view=dsc-1.1
-    @{ ModuleName = "ActiveDirectoryDsc"; ModuleVersion = '6.7.0' },
-    @{ ModuleName = "ComputerManagementDsc"; ModuleVersion = '10.0.0' },
-    @{ ModuleName = "SystemLocaleDsc"; ModuleVersion = '1.1.0.0' },
-    @{ ModuleName = "Microsoft365DSC"; ModuleVersion = '1.25.1112.1' },
-    @{ ModuleName = "xDnsServer"; ModuleVersion = '2.0.0' },
-    @{ ModuleName = "NTFSSecurity"; ModuleVersion = '4.2.5' }
+    @{ ModuleName = "Transferetto"; ModuleVersion = '1.0.0' }
   )
 
   # Assemblies that must be loaded prior to importing this module

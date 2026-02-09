@@ -33,9 +33,11 @@ try {
 
   if (-not (Test-Path -Path $path)) {
     Write-Log "Source path $Source was not found on the machine. Exiting" -Timestamps
-  } else {
+  }
+  else {
     Write-Log "Found source path $Source" -Timestamps
   }
-} catch {
+}
+catch {
   Write-Log "WTF, had to catch it..."
 }
