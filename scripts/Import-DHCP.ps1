@@ -47,4 +47,4 @@ if (-not (Test-Path -Path $InputPath -PathType Leaf)) {
   Throw("InputPath is not a valid file. Please provide a valid XML file path.")
 }
 
-Export-DhcpServer -ComputerName $ComputerName -File $InputPath -Force
+Import-DhcpServer -ComputerName $ComputerName -File $InputPath -Force
