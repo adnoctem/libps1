@@ -68,7 +68,7 @@ param (
     Mandatory = $false,
     HelpMessage = "The peer allowed IP addresses."
   )]
-  [string[]]$ConfigurationPeerAllowedIPs = @("192.168.99.0/24"),
+  [string[]]$ConfigurationPeerAllowedIPs = @("192.168.99.0/24", "192.168.0.0/23"),
 
   [Parameter(
     Position = 6,
