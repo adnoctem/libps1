@@ -45,3 +45,65 @@ function Convert-Quote {
 
   Set-Content -Path $Path -Value $content
 }
+
+function Merge-ObjectArrays {
+  <#
+  .SYNOPSIS
+    Merges two arrays of objects, overriding base values with those from overrides.
+  .DESCRIPTION
+    For each object in the Overrides array, finds the matching object in the
+    Base array by Name (or by Path + Name when a Path property is present).
+    Only keys that already exist on the base object are transferred — unknown
+    keys in the override are silently ignored.  The base array is mutated in
+    place and no output is returned.
+  .PARAMETER Base
+    The array of hashtables or objects to merge into (modified in place).
+  .PARAMETER Overrides
+    The array of hashtables or objects whose values take precedence.
+  .EXAMPLE
+    PS> $base = @(@{ Name = 'A'; Value = 1 }, @{ Name = 'B'; Value = 2 })
+    PS> $over  = @(@{ Name = 'A'; Value = 99; Extra = 'ignored' })
+    PS> Merge-ObjectArrays -Base $base -Overrides $over
+    # $base[0].Value is now 99; 'Extra' is silently ignored
+  .LINK
+    https://github.com/adnoctem/libps1/blob/main/lib/data.ps1
+  .NOTES
+    Author: Maximilian Gindorfer <info@mvprowess.com>
+    License: MIT
+  #>
+
+  [OutputType([void])]
+  param (
+    [Parameter(Mandatory = $true)]
+    [array]
+    $Base,
+
+    [Parameter(Mandatory = $true)]
+    [array]
+    $Overrides
+  )
+
+  foreach ($_override in $Overrides) {
+    $_name = $_override.Name
+    if (-not $_name) { continue }
+
+    # Match by Path + Name when Path is provided, otherwise by Name alone
+    $_match = foreach ($_entry in $Base) {
+      if ($_override.PSObject.Properties.Name -contains 'Path' -and $_override.Path) {
+        if ($_entry.Path -eq $_override.Path -and $_entry.Name -eq $_name) { $_entry; break }
+      }
+      else {
+        if ($_entry.Name -eq $_name) { $_entry; break }
+      }
+    }
+
+    if (-not $_match) { continue }
+
+    # Only transfer keys that already exist on the base object
+    foreach ($_key in $_match.Keys) {
+      if ($_override.PSObject.Properties.Name -contains $_key) {
+        $_match[$_key] = $_override.$_key
+      }
+    }
+  }
+}

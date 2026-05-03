@@ -15,11 +15,22 @@ foreach ($file in $files) {
 }
 
 $publicFunctions = @(
-  # log.ps1
-  'Write-Log',
+  # data.ps1
+  'Convert-Quote',
+  'Merge-ObjectArrays',
 
   # host.ps1
-  'Show-HostName'
+  'Show-HostName',
+
+  # log.ps1
+  'Show-Color',
+  'Write-Log',
+
+  # packages.ps1
+  'Install-AppxPackage',
+  'Uninstall-AppxPackage',
+  'Install-WinGetPackage',
+  'Uninstall-WinGetPackage',
 
   # path.ps1
   'Test-PathExists',
@@ -27,7 +38,39 @@ $publicFunctions = @(
   'Get-LogPath',
   'Get-DataPath',
   'Get-TemporaryPath',
-  'Get-NewPath'
+  'Get-NewPath',
+
+  # permissions.ps1
+  'Request-AdministratorPrivilege',
+  'Read-ProcessElevation',
+
+  # registry.ps1
+  'ConvertTo-RegistryProviderPath',
+  'Resolve-RegistryPath',
+  'Get-RegistryKey',
+  'Set-RegistryKey',
+  'Remove-RegistryKey',
+  'Get-RegistryValue',
+  'Set-RegistryValue',
+  'Remove-RegistryValue',
+  'Test-RegistryPath',
+  'Test-RegistryValue',
+  'Get-RegistryValueKind',
+  'Mount-DefaultUserHive',
+  'Dismount-DefaultUserHive',
+
+  # security.ps1
+  'Get-DefenderThreatDetection',
+  'Get-DefenderThreat',
+  'Get-DefenderThreatDescriptionURL',
+  'Find-NewlyWrittenObject',
+
+  # settings.ps1
+  'Get-DefaultApp',
+
+  # user.ps1
+  'Get-UserInfo',
+  'Get-UserSID'
 )
 
 Export-ModuleMember -Function $publicFunctions
