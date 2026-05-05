@@ -26,6 +26,9 @@ $publicFunctions = @(
   'Show-Color',
   'Write-Log',
 
+  # networking.ps1
+  'Get-IPv4Address',
+
   # packages.ps1
   'Install-AppxPackage',
   'Uninstall-AppxPackage',

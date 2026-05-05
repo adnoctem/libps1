@@ -9,7 +9,7 @@
   repeated 16 times) and broadcasts it via UDP on both ports 7 and 9 — the two
   most common ports NICs listen on.  Use -DryRun to preview without sending.
 
-.PARAMETER Mac
+.PARAMETER MacAddress
   The target machine's MAC address.  Accepted formats:
     '1A:2B:3C:4D:5E:6F'  (colon-separated)
     '1A-2B-3C-4D-5E-6F'  (dash-separated)
@@ -45,10 +45,18 @@ param (
   )]
   [ValidatePattern('^([0-9A-Fa-f]{2}[:-]){5}[0-9A-Fa-f]{2}$|^[0-9A-Fa-f]{12}$')]
   [string]
-  $Mac,
+  $MacAddress,
 
   [Parameter(
     Position = 1,
+    Mandatory = $false,
+    HelpMessage = 'The broadcast IP address to send the magic packet to.'
+  )]
+  [string]
+  $BroadcastAddress,
+
+  [Parameter(
+    Position = 2,
     Mandatory = $false,
     HelpMessage = 'Preview the operation without sending any packets.'
   )]
@@ -56,9 +64,12 @@ param (
   $DryRun
 )
 
-# Bootstrap: import the libps1 module
-$modulePath = Join-Path -Path $PSScriptRoot -ChildPath '..\..\lib\libps1.psd1' -Resolve
-Import-Module $modulePath -Force -ErrorAction Stop
+# ---- Module import ------------------------------------
+$root = Split-Path $PSScriptRoot -Parent
+$module = Join-Path -Path $root 'lib/libps1.psm1'
+
+Import-Module $module -Force
+# -------------------------------------------------------
 
 # When -DryRun is active, enable WhatIf for downstream lib calls and log intent.
 if ($DryRun) {
@@ -67,19 +78,15 @@ if ($DryRun) {
 }
 
 # Build the magic packet: strip non-hex chars, then parse 2 chars per byte
-Write-Log -Message "Building magic packet for MAC $Mac …" -Color Yellow
-
-$normalized = $Mac -replace '[^0-9A-Fa-f]', ''
+Write-Log -Message "Building magic packet for MAC $MacAddress ..." -Color Yellow
+$normalized = $MacAddress -replace '[^0-9A-Fa-f]', ''
 if ($normalized.Length -ne 12) {
-  Write-Log -Message "Invalid MAC address after normalisation — expected 12 hex digits, got $($normalized.Length)." -Color Red
+  Write-Log -Message "Invalid MAC address after normalization — expected 12 hex digits, got $($normalized.Length)." -Color Red
   exit 1
 }
 
-$macBytes = for ($i = 0; $i -lt 12; $i += 2) {
-  [byte]"0x$($normalized.Substring($i, 2))"
-}
-[byte[]]$packet = (, 0xFF * 6) + ($macBytes * 16)
-
+$macBytes = $normalized -split '(..)' | Where-Object { $_ -ne '' } | ForEach-Object { [byte]("0x$_") }
+$packet = @([byte]0xFF) * 6 + ($macBytes * 16)
 Write-Log -Message '  -> Magic packet assembled.' -Color Gray
 
 # Broadcast on both commonly-used WoL ports
@@ -95,6 +102,11 @@ else {
 
     try {
       $client = New-Object System.Net.Sockets.UdpClient
+      $client.EnableBroadcast = $true
+      
+      $destination = "TBA"
+      # Reimplementation due here
+
       $client.Connect([System.Net.IPAddress]::Broadcast, $port)
       $null = $client.Send($packet, $packet.Length)
       $client.Close()
