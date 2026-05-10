@@ -44,7 +44,7 @@ Import-Module $module -Force
 # $MACBytes = $MACList | ForEach-Object { [byte]("0x$_") }
 # Write-Log -Message "MAC Bytes: $MACBytes" -Color Green
 
-# $MagicPacket = @([byte]0xFF) * 6 + ($MACBytes * 16)
+# $MagicPacket = @([byte]0xFF) * 6 + ($MACBytes * 16) 
 # Write-Log -Message "Magic Packet: $($MagicPacket -join ' ')" -Color Green
 
 
@@ -53,4 +53,25 @@ Import-Module $module -Force
 
 # ---------- IP testing for Send-WOLPacket.ps1 ----------
 
+# Get-IPv4Address
+# Get-IPv4SubnetMask
+# Get-IPv4Network
+# Get-IPv4NetworkCIDR
+# Get-IPv4BroadcastAddress
+
 Get-IPv4Address
+Get-IPv6Address
+Get-IPv4SubnetMask
+Get-IPv4DefaultGateway
+Get-IPv4DNSServer
+Get-MACAddress
+Get-IPv4Network
+Get-IPv6Prefix
+Get-IPv4NetworkCIDR
+Get-IPv6PrefixCIDR
+Get-IPv4BroadcastAddress
+Get-IPv6MulticastAddress
+# Test-IPv4Address
+# Test-IPv6Address
+# Confirm-IPv4Address
+# Confirm-IPv6Address

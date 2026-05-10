@@ -53,7 +53,7 @@ param (
     HelpMessage = 'The broadcast IP address to send the magic packet to.'
   )]
   [string]
-  $BroadcastAddress,
+  $BroadcastAddress = (Get-IPv4BroadcastAddress) -as [string],
 
   [Parameter(
     Position = 2,
@@ -103,12 +103,16 @@ else {
     try {
       $client = New-Object System.Net.Sockets.UdpClient
       $client.EnableBroadcast = $true
-      
-      $destination = "TBA"
-      # Reimplementation due here
 
-      $client.Connect([System.Net.IPAddress]::Broadcast, $port)
-      $null = $client.Send($packet, $packet.Length)
+      $destination = ""
+      if ($null -eq $BroadcastAddress) {
+        $destination = Get-IPv4BroadcastAddress
+        Write-Log -Message "  -> No broadcast address provided, using detected broadcast address: $destination" -Color Gray
+      }
+
+      $endpoint = New-Object System.Net.IPEndPoint([System.Net.IPAddress]::Parse($BroadcastAddress), $port)
+      # $client.Connect($endpoint)
+      $client.Send($packet, $packet.Length, $endpoint)
       $client.Close()
 
       Write-Log -Message "  -> Done — packet sent on port $port." -Color Green

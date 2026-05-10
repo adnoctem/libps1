@@ -28,6 +28,21 @@ $publicFunctions = @(
 
   # networking.ps1
   'Get-IPv4Address',
+  'Get-IPv6Address',
+  'Get-IPv4SubnetMask',
+  'Get-IPv4DefaultGateway',
+  'Get-IPv4DNSServer',
+  'Get-MACAddress',
+  'Get-IPv4Network',
+  'Get-IPv6Prefix',
+  'Get-IPv4NetworkCIDR',
+  'Get-IPv6PrefixCIDR',
+  'Get-IPv4BroadcastAddress',
+  'Get-IPv6MulticastAddress',
+  'Test-IPv4Address',
+  'Test-IPv6Address',
+  'Confirm-IPv4Address',
+  'Confirm-IPv6Address',
 
   # packages.ps1
   'Install-AppxPackage',
