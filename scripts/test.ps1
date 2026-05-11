@@ -16,8 +16,7 @@
 
 # ---- Module import ------------------------------------
 $root = Split-Path $PSScriptRoot -Parent
-$module = Join-Path -Path $root 'lib/libps1.psm1'
-
+$module = Join-Path $root 'lib/libps1.psm1'
 Import-Module $module -Force
 # -------------------------------------------------------
 
@@ -31,47 +30,67 @@ Import-Module $module -Force
 # ConvertFrom-HTMLtoWord -FileHTML "C:\Users\Admin\tmp\Pressemitteilung\test.html" -OutputFile "C:\Users\Admin\tmp\Pressemitteilung\test.docx" -Show | Out-Null
 # Convert-HTMLToPDF -FilePath '/tmp/test.html' -OutputFilePath '/tmp/test-out.pdf'
 
-# ---------- MAC testing for Send-WOLPacket.ps1 ----------
 
-# $MAC = "6c:4b:90:24:c7:75"
-# $normalized = $MAC -replace '[^0-9A-Fa-f]', ''
-# Write-Log -Message "Normalized MAC: $normalized" -Color Green
-# Write-Log -Message "Normalized MAC length: $( $normalized.Length )" -Color Green
+# ---------- Networking function tests --------------------
 
-# $MACList = $normalized -split '(..)' | Where-Object { $_ -ne '' }
-# Write-Log -Message "MAC List: $MACList" -Color Green
+# Adapter resolution
+# Get-DefaultNetworkAdapter
+# Get-DefaultNetworkAdapter -Type Ethernet
+# Get-DefaultNetworkAdapter -Type WiFi -Required
 
-# $MACBytes = $MACList | ForEach-Object { [byte]("0x$_") }
-# Write-Log -Message "MAC Bytes: $MACBytes" -Color Green
+# Address retrieval
+Get-IPAddress
+Get-IPAddress -AddressFamily IPv6
+Get-IPAddress -AddressFamily IPv4 -Required
 
-# $MagicPacket = @([byte]0xFF) * 6 + ($MACBytes * 16) 
-# Write-Log -Message "Magic Packet: $($MagicPacket -join ' ')" -Color Green
+# Subnet / prefix
+Get-SubnetMask
+Get-SubnetMask -Required
 
+# Default gateway
+Get-DefaultGateway
+Get-DefaultGateway -AddressFamily IPv6
 
-# $newBytes = $normalized -split '(..)' | Where-Object { $_ -ne '' } | ForEach-Object { [byte]("0x$_") }
-# Write-Log -Message "New Normalized MAC List: $newBytes" -Color Green
+# DNS servers
+Get-DNSServer
+Get-DNSServer -AddressFamily IPv6
 
-# ---------- IP testing for Send-WOLPacket.ps1 ----------
-
-# Get-IPv4Address
-# Get-IPv4SubnetMask
-# Get-IPv4Network
-# Get-IPv4NetworkCIDR
-# Get-IPv4BroadcastAddress
-
-Get-IPv4Address
-Get-IPv6Address
-Get-IPv4SubnetMask
-Get-IPv4DefaultGateway
-Get-IPv4DNSServer
+# MAC
 Get-MACAddress
-Get-IPv4Network
-Get-IPv6Prefix
-Get-IPv4NetworkCIDR
-Get-IPv6PrefixCIDR
-Get-IPv4BroadcastAddress
-Get-IPv6MulticastAddress
-# Test-IPv4Address
-# Test-IPv6Address
-# Confirm-IPv4Address
-# Confirm-IPv6Address
+
+# Network / prefix addresses
+Get-NetworkPrefix
+Get-NetworkPrefix -AddressFamily IPv6
+Get-Network                # alias
+Get-Prefix -AddressFamily IPv6
+Get-NetworkPrefixCIDR
+Get-NetworkPrefixCIDR -AddressFamily IPv6
+Get-NetworkCIDR            # alias
+Get-PrefixCIDR -AddressFamily IPv6
+
+# Broadcast / multicast
+# Get-BroadcastAddress
+# Get-MulticastAddress
+
+# Validation
+# Test-IPv4Address -Address '192.168.1.1'
+# Test-IPv4Address -Address '999.0.0.1'
+# Test-IPv6Address -Address '2001:db8::ff00:42:8329'
+# Test-IPv6Address -Address '::1'
+# Test-IPv6Address -Address '::ffff:192.168.1.1'
+
+# Piped adapter reuse (avoids re-resolving)
+# $adapter = Get-DefaultNetworkAdapter -Type Ethernet
+# Get-IPAddress -Adapter $adapter
+# Get-IPAddress -AddressFamily IPv6 -Adapter $adapter
+# Get-SubnetMask -Adapter $adapter
+# Get-DefaultGateway -Adapter $adapter
+# Get-DefaultGateway -AddressFamily IPv6 -Adapter $adapter
+# Get-DNSServer -Adapter $adapter
+# Get-MACAddress -Adapter $adapter
+# Get-NetworkPrefix -Adapter $adapter
+# Get-NetworkPrefix -AddressFamily IPv6 -Adapter $adapter
+# Get-NetworkPrefixCIDR -Adapter $adapter
+# Get-NetworkPrefixCIDR -AddressFamily IPv6 -Adapter $adapter
+# Get-BroadcastAddress -Adapter $adapter
+# Get-MulticastAddress -Adapter $adapter

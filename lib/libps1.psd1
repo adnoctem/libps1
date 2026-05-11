@@ -32,10 +32,7 @@
   Description           = 'An MIT-licensed collection of PowerShell scripts'
 
   # Minimum version of the PowerShell engine required by this module
-  #
-  # NOTE: We're only compatible with '7.3' version due other versions behaving differntly. See: https://github.com/PowerShell/PowerShell/issues/19795#issuecomment-1592111426
-  #
-  PowerShellVersion     = '7.3'
+  PowerShellVersion     = '5.1'
 
   # Name of the PowerShell host required by this module
   # PowerShellHostName = ''
@@ -79,11 +76,11 @@
   # Functions to export from this module, for best performance, do not use wildcards and do not delete the entry, use an empty array if there are no functions to export.
   FunctionsToExport     = '*'
 
-  # Cmdlets to export from this module, for best performance, do not use wildcards and do not delete the entry, use an empty array if there are no cmdlets to export.
-  CmdletsToExport       = '*'
+  # Cmdlets to export from this module, for best performance, do not use wildcards and do not delete the entry, use an empty array if there are no cmdlets to export. (none)
+  CmdletsToExport       = @()
 
-  # Variables to export from this module
-  VariablesToExport     = '*'
+  # Variables to export from this module (none)
+  VariablesToExport     = @()
 
   # Aliases to export from this module, for best performance, do not use wildcards and do not delete the entry, use an empty array if there are no aliases to export.
   AliasesToExport       = '*'
@@ -101,7 +98,11 @@
   PrivateData           = @{
     PSData = @{
       # Tags applied to this module. These help with module discovery in online galleries.
-      Tags                     = @('PowerShell', 'PSEdition_Core', 'PSEdition_Desktop', 'Library', 'Windows', 'Linux', 'MacOS', 'administration', 'installation', 'configuration', 'management', 'dsc')
+      Tags                     = @(
+        'PowerShell', 'PSEdition_Core', 'PSEdition_Desktop',
+        'Library', 'Windows', 'administration', 'installation',
+        'configuration', 'management'
+      )
 
       # A URL to the license for this module.
       LicenseUri               = 'https://opensource.org/license/mit'

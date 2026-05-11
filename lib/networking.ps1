@@ -1,731 +1,632 @@
-$script:knownLocalAdapters = @('VMware', 'Npcap', 'VirtualBox', 'Hyper-V', 'Loopback', 'WSL')
+# ─── Internal ────────────────────────────────────────────────────────────────
 
-function Get-IPv4Address {
+function Resolve-IPv6PrefixData {
+  # Extracts the IPv6 address, masked prefix, and prefix length from a resolved
+  # adapter's CIM parallel IPAddress/IPSubnet arrays. Shared by Get-NetworkPrefix
+  # and Get-NetworkPrefixCIDR to avoid duplicating the masking logic.
+  param([Parameter(Mandatory)][PSCustomObject]$Adapter)
+
+  $addresses = $Adapter.CimConfig.IPAddress
+  $subnets = $Adapter.CimConfig.IPSubnet
+
+  for ($i = 0; $i -lt $addresses.Count; $i++) {
+    if ($addresses[$i] -notmatch ':') { continue }
+
+    $ipv6 = $addresses[$i]
+    $sub = $subnets[$i]
+
+    $prefixLength = if ($sub -match '^\d+$') {
+      [int]$sub
+    }
+    else {
+      $bits = 0
+      foreach ($byte in [System.Net.IPAddress]::Parse($sub).GetAddressBytes()) {
+        if ($byte -eq 0xFF) { $bits += 8; continue }
+        for ($b = 7; $b -ge 0; $b--) { if (($byte -shr $b) -band 1) { $bits++ } else { break } }
+        break
+      }
+      $bits
+    }
+
+    $ipBytes = [System.Net.IPAddress]::Parse($ipv6).GetAddressBytes()
+    $prefixBytes = [byte[]]::new(16)
+    $remaining = $prefixLength
+
+    for ($j = 0; $j -lt 16; $j++) {
+      if ($remaining -ge 8) { $prefixBytes[$j] = $ipBytes[$j]; $remaining -= 8 }
+      elseif ($remaining -gt 0) { $prefixBytes[$j] = $ipBytes[$j] -band ([byte](0xFF -shl (8 - $remaining))); $remaining = 0 }
+      else { $prefixBytes[$j] = 0 }
+    }
+
+    return [PSCustomObject]@{
+      Address      = $ipv6
+      Prefix       = [System.Net.IPAddress]::new($prefixBytes).ToString()
+      PrefixLength = $prefixLength
+    }
+  }
+
+  return $null
+}
+
+# ─── Adapter resolution ───────────────────────────────────────────────────────
+
+function Get-DefaultNetworkAdapter {
   <#
     .SYNOPSIS
-      Retrieves the IPv4 address of the active network adapter that has a default gateway configured.
+      Resolves the default network adapter via the IPv4 routing table.
     .DESCRIPTION
-      This function checks all network adapters for an active connection with an IPv4 default gateway. It returns the IPv4 address of the first adapter that meets these criteria. If no such adapter is found, it logs an error and returns $null.
+      Selects the lowest-metric 0.0.0.0/0 route and resolves the corresponding
+      adapter. Physical type is identified via NDIS PhysicalMediaType, making the
+      result locale-independent. Returns a structured object consumed by all
+      downstream networking functions.
+    .PARAMETER Type
+      Filters by physical adapter type: WiFi (802.11), Ethernet (802.3),
+      VPN (Unspecified), or Any. Defaults to Any.
+    .PARAMETER Required
+      Throws on failure instead of returning $null.
     .OUTPUTS
-      [string] The IPv4 address of the active network adapter, or $null if none is found.
+      [PSCustomObject] Name, ifIndex, PhysicalMedia, NetAdapter, CimConfig
     .EXAMPLE
-      PS> Get-IPv4Address
+      PS> Get-DefaultNetworkAdapter -Type Ethernet -Required
   #>
+  param(
+    [ValidateSet('Any', 'WiFi', 'Ethernet', 'VPN')]
+    [string]$Type = 'Any',
 
-  $ip = Get-CimInstance -Class Win32_NetworkAdapterConfiguration |
-  Where-Object {
-    $_.IPEnabled -and
-    $null -ne $_.DefaultIPGateway -and
-    ($script:knownLocalAdapters -notcontains $_.Description)
-  } |
-  Select-Object -ExpandProperty IPAddress -First 1 |
-  Where-Object { $_ -notmatch ':' } |
+    [switch]$Required
+  )
+
+  $defaultRoute = Get-NetRoute -DestinationPrefix '0.0.0.0/0' -ErrorAction SilentlyContinue |
+  Where-Object { $_.NextHop -ne '0.0.0.0' } |
+  Sort-Object -Property RouteMetric |
   Select-Object -First 1
 
+  if ($null -eq $defaultRoute) {
+    $message = "No default IPv4 route found."
+    if ($Required) { throw $message }
+    Write-Log -Message $message -Color Red
+    return $null
+  }
+
+  $netAdapter = Get-NetAdapter -InterfaceIndex $defaultRoute.ifIndex -ErrorAction SilentlyContinue
+
+  if ($null -eq $netAdapter) {
+    $message = "Could not resolve adapter for interface index $($defaultRoute.ifIndex)."
+    if ($Required) { throw $message }
+    Write-Log -Message $message -Color Red
+    return $null
+  }
+
+  if ($Type -ne 'Any') {
+    $isMatch = switch ($Type) {
+      'WiFi' { $netAdapter.PhysicalMediaType -like '*802.11*' }
+      'Ethernet' { $netAdapter.PhysicalMediaType -eq '802.3' }
+      'VPN' { $netAdapter.PhysicalMediaType -eq 'Unspecified' }
+    }
+
+    if (-not $isMatch) {
+      $message = "Default adapter '$($netAdapter.Name)' (type: $($netAdapter.PhysicalMediaType)) does not match the requested type '$Type'."
+      if ($Required) { throw $message }
+      Write-Log -Message $message -Color Red
+      return $null
+    }
+  }
+
+  $cimConfig = Get-CimInstance -Class Win32_NetworkAdapterConfiguration `
+    -Filter "InterfaceIndex = $($defaultRoute.ifIndex)"
+
+  if ($null -eq $cimConfig) {
+    $message = "Could not retrieve CIM configuration for adapter '$($netAdapter.Name)'."
+    if ($Required) { throw $message }
+    Write-Log -Message $message -Color Red
+    return $null
+  }
+
+  return [PSCustomObject]@{
+    Name          = $netAdapter.Name
+    ifIndex       = $defaultRoute.ifIndex
+    PhysicalMedia = $netAdapter.PhysicalMediaType
+    NetAdapter    = $netAdapter
+    CimConfig     = $cimConfig
+  }
+}
+
+# ─── Address retrieval ────────────────────────────────────────────────────────
+
+function Get-IPAddress {
+  <#
+    .SYNOPSIS
+      Returns the IP address of the default network adapter.
+    .DESCRIPTION
+      For IPv6, global/unique-local addresses are preferred over link-local.
+      Falls back to link-local if no routable address is assigned.
+    .PARAMETER AddressFamily
+      IPv4 or IPv6. Defaults to IPv4.
+    .PARAMETER Adapter
+      Pre-resolved adapter from Get-DefaultNetworkAdapter. Resolved automatically if omitted.
+    .PARAMETER Required
+      Throws on failure instead of returning $null.
+    .OUTPUTS
+      [string]
+    .EXAMPLE
+      PS> Get-IPAddress -AddressFamily IPv6
+  #>
+  param(
+    [ValidateSet('IPv4', 'IPv6')]
+    [string]$AddressFamily = 'IPv4',
+
+    [PSCustomObject]$Adapter,
+    [switch]$Required
+  )
+
+  if ($null -eq $Adapter) { $Adapter = Get-DefaultNetworkAdapter -Required:$Required }
+  if ($null -eq $Adapter) { return $null }
+
+  $ip = if ($AddressFamily -eq 'IPv4') {
+    $Adapter.CimConfig.IPAddress | Where-Object { $_ -notmatch ':' } | Select-Object -First 1
+  }
+  else {
+    $global = $Adapter.CimConfig.IPAddress |
+    Where-Object { $_ -match ':' -and $_ -notmatch '^fe80' } |
+    Select-Object -First 1
+
+    if ($null -ne $global) {
+      $global
+    }
+    else {
+      $Adapter.CimConfig.IPAddress | Where-Object { $_ -match ':' } | Select-Object -First 1
+    }
+  }
+
   if ($null -eq $ip) {
-    Write-Log -Message "No active network adapter with an IPv4 default gateway was found." -Color Red
+    $message = "No $AddressFamily address found on adapter '$($Adapter.Name)'."
+    if ($Required) { throw $message }
+    Write-Log -Message $message -Color Red
     return $null
   }
 
   return $ip
 }
 
-function Get-IPv6Address {
+function Get-SubnetMask {
   <#
     .SYNOPSIS
-      Retrieves the IPv6 address of the active network adapter that has a default gateway configured.
+      Returns the IPv4 subnet mask of the default network adapter.
     .DESCRIPTION
-      This function checks all network adapters for an active connection with an IPv6 default gateway. It returns the IPv6 address of the first adapter that meets these criteria. If no such adapter is found, it logs an error and returns $null.
+      Resolves the mask from the CIM IPSubnet array at the index corresponding
+      to the IPv4 entry in the parallel IPAddress array.
+    .PARAMETER Adapter
+      Pre-resolved adapter from Get-DefaultNetworkAdapter. Resolved automatically if omitted.
+    .PARAMETER Required
+      Throws on failure instead of returning $null.
     .OUTPUTS
-      [string] The IPv6 address of the active network adapter, or $null if none is found.
+      [string]
     .EXAMPLE
-      PS> Get-IPv6Address
+      PS> Get-SubnetMask
   #>
+  param(
+    [PSCustomObject]$Adapter,
+    [switch]$Required
+  )
 
-  $ip = Get-CimInstance -Class Win32_NetworkAdapterConfiguration |
-  Where-Object {
-    $_.IPEnabled -and
-    $null -ne $_.DefaultIPGateway -and
-    ($script:knownLocalAdapters -notcontains $_.Description)
-  } |
-  Select-Object -ExpandProperty IPAddress -First 1 |
-  Where-Object { $_ -match ':' } |
-  Select-Object -First 1
+  if ($null -eq $Adapter) { $Adapter = Get-DefaultNetworkAdapter -Required:$Required }
+  if ($null -eq $Adapter) { return $null }
 
-  if ($null -eq $ip) {
-    Write-Log -Message "No active network adapter with an IPv6 default gateway was found." -Color Red
+  $addresses = $Adapter.CimConfig.IPAddress
+  $subnets = $Adapter.CimConfig.IPSubnet
+  $mask = $null
+
+  for ($i = 0; $i -lt $addresses.Count; $i++) {
+    if ($addresses[$i] -notmatch ':') { $mask = $subnets[$i]; break }
+  }
+
+  if ($null -eq $mask) {
+    $message = "No IPv4 subnet mask found on adapter '$($Adapter.Name)'."
+    if ($Required) { throw $message }
+    Write-Log -Message $message -Color Red
     return $null
   }
 
-  return $ip
+  return $mask
 }
 
-function Get-IPv4SubnetMask {
+function Get-DefaultGateway {
   <#
     .SYNOPSIS
-      Retrieves the IPv4 subnet mask of the active network adapter that has a default gateway configured.
-    .DESCRIPTION
-      This function checks all network adapters for an active connection with an IPv4 default gateway. It returns the IPv4 subnet mask of the first adapter that meets these criteria. If no such adapter is found, it logs an error and returns $null.
+      Returns the default gateway of the default network adapter.
+    .PARAMETER AddressFamily
+      IPv4 or IPv6. Defaults to IPv4.
+    .PARAMETER Adapter
+      Pre-resolved adapter from Get-DefaultNetworkAdapter. Resolved automatically if omitted.
+    .PARAMETER Required
+      Throws on failure instead of returning $null.
     .OUTPUTS
-      [string] The IPv4 subnet mask of the active network adapter, or $null if none is found.
+      [string]
     .EXAMPLE
-      PS> Get-IPv4SubnetMask
+      PS> Get-DefaultGateway -AddressFamily IPv4
   #>
+  param(
+    [ValidateSet('IPv4', 'IPv6')]
+    [string]$AddressFamily = 'IPv4',
 
-  $subnet = Get-CimInstance -Class Win32_NetworkAdapterConfiguration |
-  Where-Object {
-    $_.IPEnabled -and
-    $null -ne $_.DefaultIPGateway -and
-    ($script:knownLocalAdapters -notcontains $_.Description)
-  } |
-  Select-Object -ExpandProperty IPSubnet -First 1 |
-  Where-Object { $_ -notmatch ':' } |
-  Select-Object -First 1
+    [PSCustomObject]$Adapter,
+    [switch]$Required
+  )
 
-  if ($null -eq $subnet) {
-    Write-Log -Message "No active network adapter with an IPv4 default gateway was found." -Color Red
-    return $null
+  if ($null -eq $Adapter) { $Adapter = Get-DefaultNetworkAdapter -Required:$Required }
+  if ($null -eq $Adapter) { return $null }
+
+  $gateway = if ($AddressFamily -eq 'IPv4') {
+    $Adapter.CimConfig.DefaultIPGateway | Where-Object { $_ -notmatch ':' } | Select-Object -First 1
   }
-
-  return $subnet
-}
-
-function Get-IPv4DefaultGateway {
-  <#
-    .SYNOPSIS
-      Retrieves the IPv4 default gateway of the active network adapter that has a default gateway configured.
-    .DESCRIPTION
-      This function checks all network adapters for an active connection with an IPv4 default gateway. It returns the IPv4 default gateway of the first adapter that meets these criteria. If no such adapter is found, it logs an error and returns $null.
-    .OUTPUTS
-      [string] The IPv4 default gateway of the active network adapter, or $null if none is found.
-    .EXAMPLE
-      PS> Get-IPv4DefaultGateway
-  #>
-
-  $gateway = Get-CimInstance -Class Win32_NetworkAdapterConfiguration |
-  Where-Object {
-    $_.IPEnabled -and
-    $null -ne $_.DefaultIPGateway -and
-    ($script:knownLocalAdapters -notcontains $_.Description)
-  } |
-  Select-Object -ExpandProperty DefaultIPGateway -First 1 |
-  Where-Object { $_ -notmatch ':' } |
-  Select-Object -First 1
+  else {
+    $Adapter.CimConfig.DefaultIPGateway | Where-Object { $_ -match ':' } | Select-Object -First 1
+  }
 
   if ($null -eq $gateway) {
-    Write-Log -Message "No active network adapter with an IPv4 default gateway was found." -Color Red
+    $message = "No $AddressFamily default gateway found on adapter '$($Adapter.Name)'."
+    if ($Required) { throw $message }
+    Write-Log -Message $message -Color Red
     return $null
   }
 
   return $gateway
 }
 
-function Get-IPv4DNSServer {
+function Get-DNSServer {
   <#
     .SYNOPSIS
-      Retrieves the IPv4 DNS servers of the active network adapter that has a default gateway configured.
-    .DESCRIPTION
-      This function checks all network adapters for an active connection with an IPv4 default gateway. It returns the IPv4 DNS servers of the first adapter that meets these criteria. If no such adapter is found, it logs an error and returns $null.
+      Returns the configured DNS servers of the default network adapter.
+    .PARAMETER AddressFamily
+      IPv4 or IPv6. Defaults to IPv4.
+    .PARAMETER Adapter
+      Pre-resolved adapter from Get-DefaultNetworkAdapter. Resolved automatically if omitted.
+    .PARAMETER Required
+      Throws on failure instead of returning $null.
     .OUTPUTS
-      [string[]] The IPv4 DNS servers of the active network adapter, or $null if none is found.
+      [string[]]
     .EXAMPLE
-      PS> Get-IPv4DNSServers
+      PS> Get-DNSServer
   #>
+  param(
+    [ValidateSet('IPv4', 'IPv6')]
+    [string]$AddressFamily = 'IPv4',
 
-  $dnsServers = Get-CimInstance -Class Win32_NetworkAdapterConfiguration |
-  Where-Object {
-    $_.IPEnabled -and
-    $null -ne $_.DefaultIPGateway -and
-    ($script:knownLocalAdapters -notcontains $_.Description)
-  } |
-  Select-Object -ExpandProperty DNSServerSearchOrder -First 1 |
-  Where-Object { $_ -notmatch ':' }
+    [PSCustomObject]$Adapter,
+    [switch]$Required
+  )
 
-  if ($null -eq $dnsServers) {
-    Write-Log -Message "No active network adapter with an IPv4 default gateway was found." -Color Red
+  if ($null -eq $Adapter) { $Adapter = Get-DefaultNetworkAdapter -Required:$Required }
+  if ($null -eq $Adapter) { return $null }
+
+  $servers = if ($AddressFamily -eq 'IPv4') {
+    $Adapter.CimConfig.DNSServerSearchOrder | Where-Object { $_ -notmatch ':' }
+  }
+  else {
+    $Adapter.CimConfig.DNSServerSearchOrder | Where-Object { $_ -match ':' }
+  }
+
+  if ($null -eq $servers -or @($servers).Count -eq 0) {
+    $message = "No $AddressFamily DNS servers found on adapter '$($Adapter.Name)'."
+    if ($Required) { throw $message }
+    Write-Log -Message $message -Color Red
     return $null
   }
 
-  return $dnsServers
+  return $servers
 }
 
 function Get-MACAddress {
   <#
     .SYNOPSIS
-      Retrieves the MAC address of the active network adapter that has a default gateway configured.
-    .DESCRIPTION
-      This function checks all network adapters for an active connection with a default gateway. It returns the MAC address of the first adapter that meets these criteria. If no such adapter is found, it logs an error and returns $null.
+      Returns the MAC address of the default network adapter.
+    .PARAMETER Adapter
+      Pre-resolved adapter from Get-DefaultNetworkAdapter. Resolved automatically if omitted.
+    .PARAMETER Required
+      Throws on failure instead of returning $null.
     .OUTPUTS
-      [string] The MAC address of the active network adapter, or $null if none is found.
+      [string]
     .EXAMPLE
       PS> Get-MACAddress
   #>
+  param(
+    [PSCustomObject]$Adapter,
+    [switch]$Required
+  )
 
-  $mac = Get-CimInstance -Class Win32_NetworkAdapterConfiguration |
-  Where-Object {
-    $_.IPEnabled -and
-    $null -ne $_.DefaultIPGateway -and
-    ($script:knownLocalAdapters -notcontains $_.Description)
-  } | Select-Object -ExpandProperty MACAddress -First 1
+  if ($null -eq $Adapter) { $Adapter = Get-DefaultNetworkAdapter -Required:$Required }
+  if ($null -eq $Adapter) { return $null }
+
+  $mac = $Adapter.CimConfig.MACAddress
 
   if ($null -eq $mac) {
-    Write-Log -Message "No active network adapter with a default gateway was found." -Color Red
+    $message = "No MAC address found on adapter '$($Adapter.Name)'."
+    if ($Required) { throw $message }
+    Write-Log -Message $message -Color Red
     return $null
   }
 
   return $mac
 }
 
-function Get-IPv4Network {
+# ─── Network / prefix ─────────────────────────────────────────────────────────
+
+function Get-NetworkPrefix {
   <#
     .SYNOPSIS
-      Retrieves the IPv4 network address of the active network adapter that has a default gateway configured.
-    .DESCRIPTION
-      This function checks all network adapters for an active connection with an IPv4 default gateway. It calculates and returns the IPv4 network address of the first adapter that meets these criteria. If no such adapter is found, it logs an error and returns $null.
+      Returns the network address (IPv4) or prefix address (IPv6) of the default adapter.
+    .PARAMETER AddressFamily
+      IPv4 or IPv6. Defaults to IPv4.
+    .PARAMETER Adapter
+      Pre-resolved adapter from Get-DefaultNetworkAdapter. Resolved automatically if omitted.
+    .PARAMETER Required
+      Throws on failure instead of returning $null.
     .OUTPUTS
-      [string] The IPv4 network address of the active network adapter, or $null if none is found.
+      [string]
     .EXAMPLE
-      PS> Get-IPv4Network
+      PS> Get-NetworkPrefix
+    .EXAMPLE
+      PS> Get-Prefix -AddressFamily IPv6
   #>
+  [Alias('Get-Network', 'Get-Prefix')]
+  param(
+    [ValidateSet('IPv4', 'IPv6')]
+    [string]$AddressFamily = 'IPv4',
 
-  $ip = Get-IPv4Address
-  $subnet = Get-IPv4SubnetMask
+    [PSCustomObject]$Adapter,
+    [switch]$Required
+  )
 
-  if ($null -eq $ip -or $null -eq $subnet) {
-    Write-Log -Message "Cannot calculate network address without valid IP and subnet mask." -Color Red
+  if ($null -eq $Adapter) { $Adapter = Get-DefaultNetworkAdapter -Required:$Required }
+  if ($null -eq $Adapter) { return $null }
+
+  if ($AddressFamily -eq 'IPv4') {
+    $ip = Get-IPAddress -AddressFamily IPv4 -Adapter $Adapter -Required:$Required
+    $mask = Get-SubnetMask -Adapter $Adapter -Required:$Required
+
+    if ($null -eq $ip -or $null -eq $mask) { return $null }
+
+    $ipBytes = [System.Net.IPAddress]::Parse($ip).GetAddressBytes()
+    $maskBytes = [System.Net.IPAddress]::Parse($mask).GetAddressBytes()
+    $netBytes = [byte[]](0..3 | ForEach-Object { $ipBytes[$_] -band $maskBytes[$_] })
+
+    return [System.Net.IPAddress]::new($netBytes).ToString()
+  }
+
+  $data = Resolve-IPv6PrefixData -Adapter $Adapter
+
+  if ($null -eq $data) {
+    $message = "No IPv6 address with a valid prefix length found on adapter '$($Adapter.Name)'."
+    if ($Required) { throw $message }
+    Write-Log -Message $message -Color Red
     return $null
   }
+
+  return $data.Prefix
+}
+
+function Get-NetworkPrefixCIDR {
+  <#
+    .SYNOPSIS
+      Returns the network prefix in CIDR notation for the default adapter.
+    .PARAMETER AddressFamily
+      IPv4 or IPv6. Defaults to IPv4.
+    .PARAMETER Adapter
+      Pre-resolved adapter from Get-DefaultNetworkAdapter. Resolved automatically if omitted.
+    .PARAMETER Required
+      Throws on failure instead of returning $null.
+    .OUTPUTS
+      [string]
+    .EXAMPLE
+      PS> Get-NetworkPrefixCIDR
+    .EXAMPLE
+      PS> Get-PrefixCIDR -AddressFamily IPv6
+  #>
+  [Alias('Get-NetworkCIDR', 'Get-PrefixCIDR')]
+  param(
+    [ValidateSet('IPv4', 'IPv6')]
+    [string]$AddressFamily = 'IPv4',
+
+    [PSCustomObject]$Adapter,
+    [switch]$Required
+  )
+
+  if ($null -eq $Adapter) { $Adapter = Get-DefaultNetworkAdapter -Required:$Required }
+  if ($null -eq $Adapter) { return $null }
+
+  if ($AddressFamily -eq 'IPv4') {
+    $prefix = Get-NetworkPrefix -AddressFamily IPv4 -Adapter $Adapter -Required:$Required
+    $mask = Get-SubnetMask -Adapter $Adapter -Required:$Required
+
+    if ($null -eq $prefix -or $null -eq $mask) { return $null }
+
+    $cidr = (([System.Net.IPAddress]::Parse($mask).GetAddressBytes() |
+        ForEach-Object { [Convert]::ToString($_, 2) }) -join '').Replace('0', '').Length
+
+    return "$prefix/$cidr"
+  }
+
+  $data = Resolve-IPv6PrefixData -Adapter $Adapter
+
+  if ($null -eq $data) {
+    $message = "No IPv6 address with a valid prefix length found on adapter '$($Adapter.Name)'."
+    if ($Required) { throw $message }
+    Write-Log -Message $message -Color Red
+    return $null
+  }
+
+  return "$($data.Prefix)/$($data.PrefixLength)"
+}
+
+function Get-BroadcastAddress {
+  <#
+    .SYNOPSIS
+      Returns the IPv4 broadcast address of the default network adapter.
+    .PARAMETER Adapter
+      Pre-resolved adapter from Get-DefaultNetworkAdapter. Resolved automatically if omitted.
+    .PARAMETER Required
+      Throws on failure instead of returning $null.
+    .OUTPUTS
+      [string]
+    .EXAMPLE
+      PS> Get-BroadcastAddress
+  #>
+  param(
+    [PSCustomObject]$Adapter,
+    [switch]$Required
+  )
+
+  if ($null -eq $Adapter) { $Adapter = Get-DefaultNetworkAdapter -Required:$Required }
+  if ($null -eq $Adapter) { return $null }
+
+  $ip = Get-IPAddress -AddressFamily IPv4 -Adapter $Adapter -Required:$Required
+  $mask = Get-SubnetMask -Adapter $Adapter -Required:$Required
+
+  if ($null -eq $ip -or $null -eq $mask) { return $null }
 
   $ipBytes = [System.Net.IPAddress]::Parse($ip).GetAddressBytes()
-  $subnetBytes = [System.Net.IPAddress]::Parse($subnet).GetAddressBytes()
-
-  $networkBytes = @()
-  for ($i = 0; $i -lt 4; $i++) {
-    $networkBytes += ($ipBytes[$i] -band $subnetBytes[$i])
-  }
-
-  return [System.Net.IPAddress]::new($networkBytes).ToString()
-}
-
-function Get-IPv6Prefix {
-  <#
-    .SYNOPSIS
-      Retrieves the IPv6 prefix (network) of the active network adapter that has a default gateway configured.
-    .DESCRIPTION
-      This function checks all network adapters for an active connection with an IPv6 default gateway. It calculates the IPv6 prefix by masking the IPv6 address with its prefix length per RFC 4291. If no such adapter is found, it logs an error and returns $null.
-    .OUTPUTS
-      [string] The IPv6 prefix of the active network adapter, or $null if none is found.
-    .EXAMPLE
-      PS> Get-IPv6Prefix
-  #>
-
-  $adapter = Get-CimInstance -Class Win32_NetworkAdapterConfiguration |
-  Where-Object {
-    $_.IPEnabled -and
-    $null -ne $_.DefaultIPGateway -and
-    ($script:knownLocalAdapters -notcontains $_.Description)
-  } |
-  Select-Object -First 1
-
-  if ($null -eq $adapter) {
-    Write-Log -Message "No active network adapter with a default gateway was found." -Color Red
-    return $null
-  }
-
-  # IPAddress and IPSubnet are parallel arrays — find the IPv6 entry
-  $ipv6Address = $null
-  $prefixLength = 0
-
-  for ($i = 0; $i -lt $adapter.IPAddress.Count; $i++) {
-    if ($adapter.IPAddress[$i] -match ':') {
-      $ipv6Address = $adapter.IPAddress[$i]
-      $subnetEntry = $adapter.IPSubnet[$i]
-
-      # IPSubnet may be a prefix length number (e.g., "64") or a full IPv6 mask
-      if ($subnetEntry -match '^[0-9]+$') {
-        $prefixLength = [int]$subnetEntry
-      }
-      else {
-        # Full mask — count leading 1-bits to derive the prefix length
-        $maskBytes = [System.Net.IPAddress]::Parse($subnetEntry).GetAddressBytes()
-        foreach ($byte in $maskBytes) {
-          if ($byte -eq 0xFF) { $prefixLength += 8; continue }
-          for ($bit = 7; $bit -ge 0; $bit--) {
-            if (($byte -shr $bit) -band 1) { $prefixLength++ } else { break }
-          }
-          break
-        }
-      }
-      break
-    }
-  }
-
-  if ($null -eq $ipv6Address -or $prefixLength -eq 0) {
-    Write-Log -Message "No IPv6 address with a valid prefix length was found." -Color Red
-    return $null
-  }
-
-  # Build the prefix by masking the address with the prefix length
-  $ipBytes = [System.Net.IPAddress]::Parse($ipv6Address).GetAddressBytes()
-  $prefixBytes = [byte[]]::new(16)
-  $bitsRemaining = $prefixLength
-
-  for ($i = 0; $i -lt 16; $i++) {
-    if ($bitsRemaining -ge 8) {
-      $prefixBytes[$i] = $ipBytes[$i]
-      $bitsRemaining -= 8
-    }
-    elseif ($bitsRemaining -gt 0) {
-      $mask = [byte](0xFF -shl (8 - $bitsRemaining))
-      $prefixBytes[$i] = $ipBytes[$i] -band $mask
-      $bitsRemaining = 0
-    }
-    else {
-      $prefixBytes[$i] = 0
-    }
-  }
-
-  return [System.Net.IPAddress]::new($prefixBytes).ToString()
-}
-
-function Get-IPv4NetworkCIDR {
-  <#
-    .SYNOPSIS
-      Retrieves the IPv4 network address in CIDR notation of the active network adapter that has a default gateway configured.
-    .DESCRIPTION
-      This function checks all network adapters for an active connection with an IPv4 default gateway. It calculates and returns the IPv4 network address in CIDR notation of the first adapter that meets these criteria. If no such adapter is found, it logs an error and returns $null.
-    .OUTPUTS
-      [string] The IPv4 network address in CIDR notation of the active network adapter, or $null if none is found.
-    .EXAMPLE
-      PS> Get-IPv4NetworkCIDR
-  #>
-
-  $network = Get-IPv4Network
-  $subnet = Get-IPv4SubnetMask
-
-  if ($null -eq $network -or $null -eq $subnet) {
-    Write-Log -Message "Cannot calculate CIDR notation without valid network address and subnet mask." -Color Red
-    return $null
-  }
-
-  $subnetBytes = [System.Net.IPAddress]::Parse($subnet).GetAddressBytes()
-  $cidr = 0
-  foreach ($byte in $subnetBytes) {
-    switch ($byte) {
-      255 { $cidr += 8 }
-      254 { $cidr += 7 }
-      252 { $cidr += 6 }
-      248 { $cidr += 5 }
-      240 { $cidr += 4 }
-      224 { $cidr += 3 }
-      192 { $cidr += 2 }
-      128 { $cidr += 1 }
-    }
-  }
-
-  return "$network/$cidr"
-}
-
-function Get-IPv6PrefixCIDR {
-  <#
-    .SYNOPSIS
-      Retrieves the IPv6 prefix in CIDR notation of the active network adapter that has a default gateway configured.
-    .DESCRIPTION
-      This function checks all network adapters for an active connection with an IPv6 default gateway. It calculates and returns the IPv6 prefix in CIDR notation (prefix/prefixLength) per RFC 4291. If no such adapter is found, it logs an error and returns $null.
-    .OUTPUTS
-      [string] The IPv6 prefix in CIDR notation of the active network adapter, or $null if none is found.
-    .EXAMPLE
-      PS> Get-IPv6PrefixCIDR
-  #>
-
-  $adapter = Get-CimInstance -Class Win32_NetworkAdapterConfiguration |
-  Where-Object {
-    $_.IPEnabled -and
-    $null -ne $_.DefaultIPGateway -and
-    ($script:knownLocalAdapters -notcontains $_.Description)
-  } |
-  Select-Object -First 1
-
-  if ($null -eq $adapter) {
-    Write-Log -Message "No active network adapter with a default gateway was found." -Color Red
-    return $null
-  }
-
-  $ipv6Address = $null
-  $prefixLength = 0
-
-  for ($i = 0; $i -lt $adapter.IPAddress.Count; $i++) {
-    if ($adapter.IPAddress[$i] -match ':') {
-      $ipv6Address = $adapter.IPAddress[$i]
-      $subnetEntry = $adapter.IPSubnet[$i]
-
-      if ($subnetEntry -match '^[0-9]+$') {
-        $prefixLength = [int]$subnetEntry
-      }
-      else {
-        $maskBytes = [System.Net.IPAddress]::Parse($subnetEntry).GetAddressBytes()
-        foreach ($byte in $maskBytes) {
-          if ($byte -eq 0xFF) { $prefixLength += 8; continue }
-          for ($bit = 7; $bit -ge 0; $bit--) {
-            if (($byte -shr $bit) -band 1) { $prefixLength++ } else { break }
-          }
-          break
-        }
-      }
-      break
-    }
-  }
-
-  if ($null -eq $ipv6Address -or $prefixLength -eq 0) {
-    Write-Log -Message "No IPv6 address with a valid prefix length was found." -Color Red
-    return $null
-  }
-
-  $ipBytes = [System.Net.IPAddress]::Parse($ipv6Address).GetAddressBytes()
-  $prefixBytes = [byte[]]::new(16)
-  $bitsRemaining = $prefixLength
-
-  for ($i = 0; $i -lt 16; $i++) {
-    if ($bitsRemaining -ge 8) {
-      $prefixBytes[$i] = $ipBytes[$i]
-      $bitsRemaining -= 8
-    }
-    elseif ($bitsRemaining -gt 0) {
-      $mask = [byte](0xFF -shl (8 - $bitsRemaining))
-      $prefixBytes[$i] = $ipBytes[$i] -band $mask
-      $bitsRemaining = 0
-    }
-    else {
-      $prefixBytes[$i] = 0
-    }
-  }
-
-  $prefix = [System.Net.IPAddress]::new($prefixBytes).ToString()
-  return "$prefix/$prefixLength"
-}
-
-function Get-IPv4BroadcastAddress {
-  <#
-    .SYNOPSIS
-      Retrieves the IPv4 broadcast address of the active network adapter that has a default gateway configured.
-    .DESCRIPTION
-      This function checks all network adapters for an active connection with an IPv4 default gateway. It calculates and returns the IPv4 broadcast address of the first adapter that meets these criteria. If no such adapter is found, it logs an error and returns $null.
-    .OUTPUTS
-      [string] The IPv4 broadcast address of the active network adapter, or $null if none is found.
-    .EXAMPLE
-      PS> Get-IPv4BroadcastAddress
-  #>
-
-  $ip = Get-IPv4Address
-  $subnet = Get-IPv4SubnetMask
-
-  if ($null -eq $ip -or $null -eq $subnet) {
-    Write-Log -Message "Cannot calculate broadcast address without valid IP and subnet mask." -Color Red
-    return $null
-  }
-
-  $ipBytes = [System.Net.IPAddress]::Parse($ip).GetAddressBytes()
-  $subnetBytes = [System.Net.IPAddress]::Parse($subnet).GetAddressBytes()
-
-  $broadcastBytes = @()
-  for ($i = 0; $i -lt 4; $i++) {
-    $invertedByte = -bnot $subnetBytes[$i]
-    $maskedByte = $invertedByte -band 0xFF
-    $broadcastBytes += $ipBytes[$i] -bor $maskedByte
-  }
+  $maskBytes = [System.Net.IPAddress]::Parse($mask).GetAddressBytes()
+  $broadcastBytes = [byte[]](0..3 | ForEach-Object { $ipBytes[$_] -bor (-bnot $maskBytes[$_] -band 0xFF) })
 
   return [System.Net.IPAddress]::new($broadcastBytes).ToString()
 }
 
-function Get-IPv6MulticastAddress {
+function Get-MulticastAddress {
   <#
     .SYNOPSIS
-      Retrieves the IPv6 solicited-node multicast address of the active network adapter.
+      Returns the solicited-node multicast address for the default adapter's IPv6 address.
     .DESCRIPTION
-      This function calculates the IPv6 solicited-node multicast address (RFC 4291 §2.7.1) for the active network adapter's IPv6 address. IPv6 has no broadcast; instead, the solicited-node multicast address is used for Neighbor Discovery (the IPv6 replacement for ARP). It is formed by taking the lower 24 bits of the unicast address and prepending the prefix ff02::1:ff00:0/104. If no IPv6 adapter is found, it logs an error and returns $null.
+      Computes the solicited-node multicast address per RFC 4291 §2.7.1 by combining
+      the ff02::1:ff00:0/104 prefix with the lower 24 bits of the unicast address.
+      Used by Neighbor Discovery as the IPv6 replacement for ARP.
+    .PARAMETER Adapter
+      Pre-resolved adapter from Get-DefaultNetworkAdapter. Resolved automatically if omitted.
+    .PARAMETER Required
+      Throws on failure instead of returning $null.
     .OUTPUTS
-      [string] The IPv6 solicited-node multicast address, or $null if none is found.
+      [string]
     .EXAMPLE
-      PS> Get-IPv6MulticastAddress
+      PS> Get-MulticastAddress
   #>
+  param(
+    [PSCustomObject]$Adapter,
+    [switch]$Required
+  )
 
-  $ip = Get-IPv6Address
+  if ($null -eq $Adapter) { $Adapter = Get-DefaultNetworkAdapter -Required:$Required }
+  if ($null -eq $Adapter) { return $null }
 
-  if ($null -eq $ip) {
-    Write-Log -Message "Cannot calculate multicast address without a valid IPv6 address." -Color Red
-    return $null
-  }
+  $ip = Get-IPAddress -AddressFamily IPv6 -Adapter $Adapter -Required:$Required
+
+  if ($null -eq $ip) { return $null }
 
   $ipBytes = [System.Net.IPAddress]::Parse($ip).GetAddressBytes()
-
-  # Solicited-node multicast address per RFC 4291 §2.7.1:
-  # Prefix ff02:0:0:0:0:1:ff00:0/104 + lower 24 bits of unicast address
   $multicastBytes = [byte[]]@(
     0xFF, 0x02, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
     0x00, 0x00, 0x00, 0x01, 0xFF,
-    $ipBytes[13],
-    $ipBytes[14],
-    $ipBytes[15]
+    $ipBytes[13], $ipBytes[14], $ipBytes[15]
   )
 
   return [System.Net.IPAddress]::new($multicastBytes).ToString()
 }
 
+# ─── Validation ───────────────────────────────────────────────────────────────
+
 function Test-IPv4Address {
   <#
     .SYNOPSIS
-      Tests whether a given string is a valid IPv4 address using pattern matching.
+      Returns $true if the input is a valid IPv4 address per RFC 791.
     .DESCRIPTION
-      This function uses a regular expression to check if the input string conforms to the standard dotted-decimal format of an IPv4 address. It returns $true if the input is a valid IPv4 address, and $false otherwise.
+      Validates via arithmetic decomposition: four dot-separated decimal octets,
+      each in 0–255, no leading zeros. Does not use regex.
     .PARAMETER Address
-      The string to test as an IPv4 address.
+      The string to validate.
     .OUTPUTS
-      [bool] $true if the input is a valid IPv4 address, $false otherwise.
+      [bool]
     .EXAMPLE
       PS> Test-IPv4Address -Address '192.168.1.1'
-      True
   #>
-  param (
-    [Parameter(Mandatory = $true)]
+  param(
+    [Parameter(Mandatory)]
     [string]$Address
   )
 
-  $pattern = '^(\d{1,3}\.){3}\d{1,3}$'
-  if ($Address -match $pattern) {
-    $octets = $Address -split '\.'
-    foreach ($octet in $octets) {
-      # Reject leading zeros (e.g., "01", "001") unless the octet is exactly "0"
-      if ($octet.Length -gt 1 -and $octet[0] -eq '0') {
-        return $false
-      }
-      $value = [int]$octet
-      if ($value -lt 0 -or $value -gt 255) {
-        return $false
-      }
-    }
-    return $true
+  if ([string]::IsNullOrEmpty($Address)) { return $false }
+
+  $octets = $Address -split '\.'
+  if ($octets.Count -ne 4) { return $false }
+
+  foreach ($octet in $octets) {
+    if ($octet.Length -eq 0) { return $false }
+    if ($octet.Length -gt 1 -and $octet[0] -eq '0') { return $false }
+    $value = 0
+    if (-not [int]::TryParse($octet, [ref]$value)) { return $false }
+    if ($value -lt 0 -or $value -gt 255) { return $false }
   }
-  return $false
+
+  return $true
 }
 
 function Test-IPv6Address {
   <#
     .SYNOPSIS
-      Tests whether a given string is a valid IPv6 address using pattern matching.
+      Returns $true if the input is a valid IPv6 address per RFC 4291.
     .DESCRIPTION
-      This function uses a comprehensive regular expression (RFC 3986) to check if the input string conforms to the standard colon-hexadecimal format of an IPv6 address, including zero-compression (::) and IPv4-mapped forms. It returns $true if the input is a valid IPv6 address, and $false otherwise.
+      Validates via structural decomposition: handles full form, :: compression,
+      and IPv4-mapped addresses (::ffff:x.x.x.x). The embedded IPv4 portion of
+      mapped addresses is delegated to Test-IPv4Address.
     .PARAMETER Address
-      The string to test as an IPv6 address.
+      The string to validate.
     .OUTPUTS
-      [bool] $true if the input is a valid IPv6 address, $false otherwise.
-    .EXAMPLE
-      PS> Test-IPv6Address -Address '2001:0db8:85a3:0000:0000:8a2e:0370:7334'
-      True
-    .EXAMPLE
-      PS> Test-IPv6Address -Address '::1'
-      True
+      [bool]
     .EXAMPLE
       PS> Test-IPv6Address -Address '2001:db8::ff00:42:8329'
-      True
   #>
-  param (
-    [Parameter(Mandatory = $true)]
+  param(
+    [Parameter(Mandatory)]
     [string]$Address
   )
 
-  # Comprehensive IPv6 regex per RFC 3986 / RFC 4291:
-  # Handles full form, :: compression, and IPv4-mapped (::ffff:x.x.x.x)
-  $pattern = '^(([0-9A-Fa-f]{1,4}:){7}[0-9A-Fa-f]{1,4}|' +
-  '([0-9A-Fa-f]{1,4}:){1,7}:|' +
-  '([0-9A-Fa-f]{1,4}:){1,6}:[0-9A-Fa-f]{1,4}|' +
-  '([0-9A-Fa-f]{1,4}:){1,5}(:[0-9A-Fa-f]{1,4}){1,2}|' +
-  '([0-9A-Fa-f]{1,4}:){1,4}(:[0-9A-Fa-f]{1,4}){1,3}|' +
-  '([0-9A-Fa-f]{1,4}:){1,3}(:[0-9A-Fa-f]{1,4}){1,4}|' +
-  '([0-9A-Fa-f]{1,4}:){1,2}(:[0-9A-Fa-f]{1,4}){1,5}|' +
-  '[0-9A-Fa-f]{1,4}:((:[0-9A-Fa-f]{1,4}){1,6})|' +
-  ':((:[0-9A-Fa-f]{1,4}){1,7}|:)|' +
-  '::(ffff(:0{1,4})?:)?((25[0-5]|(2[0-4]|1?\d)?\d)\.){3}(25[0-5]|(2[0-4]|1?\d)?\d)|' +
-  '([0-9A-Fa-f]{1,4}:){1,4}:((25[0-5]|(2[0-4]|1?\d)?\d)\.){3}(25[0-5]|(2[0-4]|1?\d)?\d))$'
+  if ([string]::IsNullOrEmpty($Address)) { return $false }
 
-  return $Address -match $pattern
-} 
-
-function Confirm-IPv4Address {
-  <#
-    .SYNOPSIS
-      Validates whether a given string is a valid IPv4 address using mathematical proof.
-    .DESCRIPTION
-      This function validates an IPv4 address per RFC 791 by decomposing it into four decimal octets and verifying each is arithmetically within the valid range (0-255). Unlike Test-IPv4Address which uses pattern matching, this function relies on arithmetic constraints — integer parsing, range checking, and canonical form verification (no leading zeros) — to mathematically prove the address is a valid 32-bit IPv4 address.
-    .PARAMETER Address
-      The string to validate as an IPv4 address.
-    .OUTPUTS
-      [bool] $true if the input is a valid IPv4 address, $false otherwise.
-    .EXAMPLE
-      PS> Confirm-IPv4Address -Address '192.168.1.1'
-      True
-    .EXAMPLE
-      PS> Confirm-IPv4Address -Address '256.0.0.1'
-      False
-    .EXAMPLE
-      PS> Confirm-IPv4Address -Address '01.02.03.04'
-      False
-  #>
-  param (
-    [Parameter(Mandatory = $true)]
-    [string]$Address
-  )
-
-  if ([string]::IsNullOrEmpty($Address)) {
-    return $false
-  }
-
-  # Decompose into octets — must yield exactly 4 parts
-  $octets = $Address -split '\.'
-  if ($octets.Count -ne 4) {
-    return $false
-  }
-
-  # Mathematically validate each octet
-  foreach ($octet in $octets) {
-    # Reject empty octets (consecutive or trailing dots)
-    if ($octet.Length -eq 0) {
-      return $false
-    }
-
-    # Reject leading zeros — canonical form per RFC 3986
-    # "0" is valid; "01", "001", "00" are not
-    if ($octet.Length -gt 1 -and $octet[0] -eq '0') {
-      return $false
-    }
-
-    # Convert to integer — must be a valid non-negative number
-    $value = 0
-    if (-not [int]::TryParse($octet, [ref]$value)) {
-      return $false
-    }
-
-    # Arithmetic range check: 0 ≤ value ≤ 255
-    # This proves the octet fits in 8 bits
-    if ($value -lt 0 -or $value -gt 255) {
-      return $false
-    }
-  }
-
-  # All octets are mathematically valid — the address is a valid 32-bit IPv4 address
-  # Address value = octet0 × 2^24 + octet1 × 2^16 + octet2 × 2^8 + octet3
-  return $true
-}
-
-function Confirm-IPv6Address {
-  <#
-    .SYNOPSIS
-      Validates whether a given string is a valid IPv6 address using mathematical proof.
-    .DESCRIPTION
-      This function validates an IPv6 address per RFC 4291 by decomposing it into 16-bit hexadecimal groups. It arithmetically verifies: each group contains 1-4 hex digits representing a value in 0x0000-0xFFFF, zero-compression (::) appears at most once and represents one or more consecutive zero groups, and the total number of groups is exactly 8. IPv4-mapped addresses (::ffff:x.x.x.x) are delegated to Confirm-IPv4Address for the embedded IPv4 portion.
-    .PARAMETER Address
-      The string to validate as an IPv6 address.
-    .OUTPUTS
-      [bool] $true if the input is a valid IPv6 address, $false otherwise.
-    .EXAMPLE
-      PS> Confirm-IPv6Address -Address '2001:0db8:85a3:0000:0000:8a2e:0370:7334'
-      True
-    .EXAMPLE
-      PS> Confirm-IPv6Address -Address '::1'
-      True
-    .EXAMPLE
-      PS> Confirm-IPv6Address -Address '2001:db8::ff00:42:8329'
-      True
-    .EXAMPLE
-      PS> Confirm-IPv6Address -Address '::ffff:192.168.1.1'
-      True
-    .EXAMPLE
-      PS> Confirm-IPv6Address -Address '::1::2'
-      False
-  #>
-  param (
-    [Parameter(Mandatory = $true)]
-    [string]$Address
-  )
-
-  if ([string]::IsNullOrEmpty($Address)) {
-    return $false
-  }
-
-  # Handle IPv4-mapped IPv6 addresses (e.g., ::ffff:192.168.1.1)
-  # If the last segment contains a dot, delegate to Confirm-IPv4Address
+  # Delegate embedded IPv4 portion of mapped addresses (e.g. ::ffff:192.168.1.1)
   $lastColon = $Address.LastIndexOf(':')
   if ($lastColon -ge 0) {
     $lastSegment = $Address.Substring($lastColon + 1)
     if ($lastSegment.Contains('.')) {
-      if (-not (Confirm-IPv4Address -Address $lastSegment)) {
-        return $false
-      }
-      # Replace IPv4 part with a placeholder hex group for group-counting
+      if (-not (Test-IPv4Address -Address $lastSegment)) { return $false }
       $Address = $Address.Substring(0, $lastColon + 1) + '0'
     }
   }
 
-  # :: must appear at most once (RFC 4291 Section 2.2)
-  $doubleColonCount = 0
-  $pos = 0
-  while (($pos = $Address.IndexOf('::', $pos)) -ge 0) {
-    $doubleColonCount++
-    $pos += 2
-  }
-  if ($doubleColonCount -gt 1) {
-    return $false
-  }
+  # :: must appear at most once
+  $pos = 0; $doubleColonCount = 0
+  while (($pos = $Address.IndexOf('::', $pos)) -ge 0) { $doubleColonCount++; $pos += 2 }
+  if ($doubleColonCount -gt 1) { return $false }
 
   $hasCompression = $doubleColonCount -eq 1
 
-  if ($hasCompression) {
-    # Split on :: to separate left and right groups
+  $groupsToValidate = if ($hasCompression) {
     $parts = $Address -split '::', 2
-    $leftGroups = if ($parts[0]) { $parts[0] -split ':' | Where-Object { $_ -ne '' } } else { @() }
-    $rightGroups = if ($parts[1]) { $parts[1] -split ':' | Where-Object { $_ -ne '' } } else { @() }
-    $explicitGroups = $leftGroups + $rightGroups
-
-    # :: represents 1 to 8 zero groups; explicit groups must be 0-7
-    # so total (explicit + at least 1 zero from ::) ≤ 8
-    if ($explicitGroups.Count -gt 7) {
-      return $false
-    }
-
-    $groupsToValidate = $explicitGroups
+    $leftGroups = if ($parts[0]) { $parts[0] -split ':' | Where-Object { $_ } } else { @() }
+    $rightGroups = if ($parts[1]) { $parts[1] -split ':' | Where-Object { $_ } } else { @() }
+    $explicit = @($leftGroups) + @($rightGroups)
+    if ($explicit.Count -gt 7) { return $false }
+    $explicit
   }
   else {
-    # Full form: exactly 8 colon-separated groups
-    $allGroups = $Address -split ':'
-    if ($allGroups.Count -ne 8) {
-      return $false
-    }
-    $groupsToValidate = $allGroups
+    $all = $Address -split ':'
+    if ($all.Count -ne 8) { return $false }
+    $all
   }
 
-  # Mathematical validation of each 16-bit hex group
-  # Define the hex digit set for set-membership testing
   $hexDigits = [char[]]'0123456789abcdefABCDEF'
 
   foreach ($group in $groupsToValidate) {
-    # Each group must contain 1-4 hex digits
-    if ($group.Length -lt 1 -or $group.Length -gt 4) {
-      return $false
-    }
-
-    # Verify every character is a valid hex digit (set membership)
-    foreach ($char in $group.ToCharArray()) {
-      if ($char -notin $hexDigits) {
-        return $false
-      }
-    }
-
-    # Arithmetic range check: 0x0000 ≤ value ≤ 0xFFFF (16-bit unsigned)
-    $value = [Convert]::ToInt32($group, 16)
-    if ($value -lt 0 -or $value -gt 0xFFFF) {
-      return $false
-    }
+    if ($group.Length -lt 1 -or $group.Length -gt 4) { return $false }
+    foreach ($char in $group.ToCharArray()) { if ($char -notin $hexDigits) { return $false } }
+    if ([Convert]::ToInt32($group, 16) -gt 0xFFFF) { return $false }
   }
 
-  # All groups are mathematically valid — the address is a valid 128-bit IPv6 address
   return $true
 }
