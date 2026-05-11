@@ -71,6 +71,9 @@ $module = Join-Path -Path $root 'lib/libps1.psm1'
 Import-Module $module -Force
 # -------------------------------------------------------
 
+# Set console title
+$Host.UI.RawUI.WindowTitle = "libps1 - Send-WOLPacket.ps1"
+
 # When -DryRun is active, enable WhatIf for downstream lib calls and log intent.
 if ($DryRun) {
   $WhatIfPreference = $true
@@ -111,7 +114,6 @@ else {
       }
 
       $endpoint = New-Object System.Net.IPEndPoint([System.Net.IPAddress]::Parse($BroadcastAddress), $port)
-      # $client.Connect($endpoint)
       $client.Send($packet, $packet.Length, $endpoint)
       $client.Close()
 
