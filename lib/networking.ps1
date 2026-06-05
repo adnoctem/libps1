@@ -1,4 +1,4 @@
-# ─── Internal ────────────────────────────────────────────────────────────────
+﻿# ─── Internal ────────────────────────────────────────────────────────────────
 
 function Resolve-IPv6PrefixData {
   # Extracts the IPv6 address, masked prefix, and prefix length from a resolved

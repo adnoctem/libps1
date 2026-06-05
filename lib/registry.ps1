@@ -1,4 +1,4 @@
-# Map of short and long hive names to canonical PowerShell drive-qualified paths.
+﻿# Map of short and long hive names to canonical PowerShell drive-qualified paths.
 # Values are the PS drive root (e.g. 'HKLM:'), not .NET enums, so they plug
 # directly into provider cmdlets (Get-Item, Set-ItemProperty, etc.).
 $script:HiveMap = @{

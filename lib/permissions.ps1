@@ -1,4 +1,4 @@
-function Request-AdministratorPrivilege {
+﻿function Request-AdministratorPrivilege {
   <#
     .SYNOPSIS
       Request-AdministratorPrivilege - Requests administrator privileges for the current script.

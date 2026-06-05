@@ -1,4 +1,4 @@
-<#
+﻿<#
 .SYNOPSIS
   Move files to a specified destination based on a custom regular expression.
 .DESCRIPTION

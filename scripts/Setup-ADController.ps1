@@ -1,4 +1,4 @@
-<#
+﻿<#
 .SYNOPSIS
   Set up Windows Server Active Directory Domain Services and promote the current machine to a Domain Controller.
 .DESCRIPTION

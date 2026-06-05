@@ -1,4 +1,4 @@
-function Invoke-WindowsUpdateCheck {
+﻿function Invoke-WindowsUpdateCheck {
 
 }
 
