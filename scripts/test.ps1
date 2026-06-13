@@ -94,3 +94,8 @@ Get-PrefixCIDR -AddressFamily IPv6
 # Get-NetworkPrefixCIDR -AddressFamily IPv6 -Adapter $adapter
 # Get-BroadcastAddress -Adapter $adapter
 # Get-MulticastAddress -Adapter $adapter
+
+Get-OSBuildNumber
+Get-OSEdition
+Get-OSVersionInfo
+Get-SystemMemory

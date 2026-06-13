@@ -83,6 +83,18 @@ $publicFunctions = @(
   # settings.ps1
   'Get-DefaultApp',
 
+  # sysinfo.ps1
+  'Get-OSBuildNumber',
+  'Get-OSDisplayVersion',
+  'Get-OSEdition',
+  'Get-OSProductName',
+  'Get-OSVersionInfo',
+  'Get-SystemMemory',
+  'Get-SystemDisk',
+  'Get-Hostname',
+  'Get-SystemUptime',
+  'Get-SystemInfo',
+
   # user.ps1
   'Get-UserInfo',
   'Get-UserSID'

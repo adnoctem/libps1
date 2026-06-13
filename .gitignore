@@ -19,3 +19,6 @@
 # Distribution folder
 dist/*
 build/*
+
+# Secret Values
+secrets/*
