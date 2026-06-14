@@ -1,5 +1,5 @@
-﻿# --------------------------------------------------------------------
-# libps1.psm1 — Module wrapper for the 'libps1' function library
+# --------------------------------------------------------------------
+# libps1.psm1 - Module wrapper for the 'libps1' function library
 # --------------------------------------------------------------------
 
 $files = Get-ChildItem -Path $PSScriptRoot -Filter *.ps1 -File -ErrorAction SilentlyContinue
@@ -42,10 +42,27 @@ $publicFunctions = @(
   'Test-IPv6Address',
 
   # packages.ps1
-  'Install-AppxPackage',
-  'Uninstall-AppxPackage',
-  'Install-WinGetPackage',
-  'Uninstall-WinGetPackage',
+  'New-PackageLifecycleResult',
+  'Get-InstalledProgramCount',
+  'Get-AppxPackageCount',
+  'Get-PackageCount',
+  'Get-Win32Program',
+  'Find-Win32Program',
+  'Install-Win32Program',
+  'Uninstall-Win32Program',
+  'Get-UPFAppxPackage',
+  'Find-UPFAppxPackage',
+  'Test-UPFAppxPackageRemovalSafety',
+  'Install-UPFAppxPackage',
+  'Update-UPFAppxPackage',
+  'Repair-UPFAppxPackage',
+  'Reset-UPFAppxPackage',
+  'Uninstall-UPFAppxPackage',
+  'Install-UPFAppxPackageSet',
+  'Uninstall-UPFAppxPackageSet',
+  'Install-Win32ProgramFromWinGet',
+  'Update-Win32ProgramFromWinGet',
+  'Uninstall-Win32ProgramFromWinGet',
 
   # path.ps1
   'Test-PathExists',

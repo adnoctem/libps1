@@ -1,4 +1,4 @@
-﻿#Requires -Version 5.0
+#Requires -Version 5.0
 
 <#
 .SYNOPSIS
@@ -121,6 +121,7 @@ function Get-TextEncoding {
   }
   catch {
     # Windows PowerShell 5.1 / .NET Framework usually does not need this.
+    Write-Verbose 'Code page provider registration was skipped or unavailable.'
   }
 
   switch ($Name) {
@@ -164,8 +165,8 @@ $outputEncoding = Get-TextEncoding -Name $OutputFormat
 
 $searchParams = @{
   LiteralPath = $Path
-  File        = $true
-  Include     = $Include
+  File = $true
+  Include = $Include
 }
 
 if (-not $NoRecurse) {
@@ -186,7 +187,7 @@ foreach ($file in $files) {
     try {
       $text = [System.IO.File]::ReadAllText($filePath, $inputEncoding)
       [System.IO.File]::WriteAllText($filePath, $text, $outputEncoding)
-      Write-Host "Converted: $filePath"
+      Write-Output "Converted: $filePath"
     }
     catch {
       Write-Error "Failed to convert '$filePath': $_"

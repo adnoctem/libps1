@@ -1,4 +1,4 @@
-﻿function Convert-Quote {
+function Convert-Quote {
   <#
   .SYNOPSIS
     Converts single quotes to double quotes or vice versa in a specified file.
@@ -21,6 +21,7 @@
     License: MIT
     #>
 
+  [Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSUseSingularNouns', '', Justification = 'Function merges two object arrays; existing public name is intentionally plural.')]
   [OutputType([void])]
   param (
     [Parameter(Mandatory = $true)]
@@ -38,7 +39,7 @@
     "Double" { $content = $content -replace "'", '"' }
     "Single" { $content = $content -replace '"', "'" }
 
-    Default {
+    default {
       throw "Invalid value for -To parameter. Use 'Single' or 'Double'."
     }
   }
@@ -53,7 +54,7 @@ function Merge-ObjectArrays {
   .DESCRIPTION
     For each object in the Overrides array, finds the matching object in the
     Base array by Name (or by Path + Name when a Path property is present).
-    Only keys that already exist on the base object are transferred — unknown
+    Only keys that already exist on the base object are transferred - unknown
     keys in the override are silently ignored.  The base array is mutated in
     place and no output is returned.
   .PARAMETER Base
@@ -84,8 +85,9 @@ function Merge-ObjectArrays {
   )
 
   foreach ($_override in $Overrides) {
+    if ($_override.PSObject.Properties.Name -notcontains 'Name') { continue }
     $_name = $_override.Name
-    if (-not $_name) { continue }
+    if ($null -eq $_name) { continue }
 
     # Match by Path + Name when Path is provided, otherwise by Name alone
     $_match = foreach ($_entry in $Base) {

@@ -1,10 +1,10 @@
-﻿#Requires -Version 5.0
+#Requires -Version 5.0
 
 <#
 .SYNOPSIS
   Sends a Wake-on-LAN magic packet to a target machine on the local subnet.
 .DESCRIPTION
-  Builds a WoL magic packet (6 × 0xFF followed by the target MAC repeated 16 times)
+  Builds a WoL magic packet (6 x 0xFF followed by the target MAC repeated 16 times)
   and broadcasts it via UDP. Use -DryRun to preview without sending.
 .PARAMETER MacAddress
   Target MAC address. Accepted formats:
@@ -38,7 +38,7 @@ param (
   [ValidatePattern('^([0-9A-Fa-f]{2}[:-]){5}[0-9A-Fa-f]{2}$|^[0-9A-Fa-f]{12}$')]
   [string]$MacAddress,
 
-  # No default value here — resolved in the script body after module import
+  # No default value here - resolved in the script body after module import
   [Parameter(Position = 1, Mandatory = $false)]
   [string]$BroadcastAddress,
 
@@ -59,10 +59,10 @@ Import-Module $module -Force
 $Host.UI.RawUI.WindowTitle = 'libps1 - Send-WOLPacket'
 
 if ($DryRun) {
-  Write-Log -Message "DRY RUN — no packets will be sent`n" -Color Yellow
+  Write-Log -Message "DRY RUN - no packets will be sent`n" -Color Yellow
 }
 
-# Resolve broadcast address after module import — cannot be done in param default
+# Resolve broadcast address after module import - cannot be done in param default
 if ([string]::IsNullOrEmpty($BroadcastAddress)) {
   try {
     $adapter = Get-DefaultNetworkAdapter -Required
@@ -80,20 +80,20 @@ Write-Log -Message "Building magic packet for MAC $MacAddress ..." -Color Yellow
 
 $normalized = $MacAddress -replace '[^0-9A-Fa-f]', ''
 if ($normalized.Length -ne 12) {
-  Write-Log -Message "Invalid MAC address after normalization — expected 12 hex digits, got $($normalized.Length)." -Color Red
+  Write-Log -Message "Invalid MAC address after normalization - expected 12 hex digits, got $($normalized.Length)." -Color Red
   exit 1
 }
 
 $macBytes = $normalized -split '(..)' |
-Where-Object { $_ -ne '' } |
-ForEach-Object { [byte]("0x$_") }
+  Where-Object { $_ -ne '' } |
+  ForEach-Object { [byte]("0x$_") }
 
 [byte[]]$packet = (@([byte]0xFF) * 6) + ($macBytes * 16)
 Write-Log -Message '  -> Magic packet assembled.' -Color Gray
 
 if ($DryRun) {
   Write-Log -Message "[DRY RUN] Would broadcast to $BroadcastAddress on UDP port $Port" -Color Yellow
-  Write-Log -Message "`nDRY RUN COMPLETE — no packets were sent." -Color Yellow
+  Write-Log -Message "`nDRY RUN COMPLETE - no packets were sent." -Color Yellow
   return
 }
 
@@ -105,7 +105,7 @@ try {
   $endpoint = New-Object System.Net.IPEndPoint([System.Net.IPAddress]::Parse($BroadcastAddress), $Port)
   $client.Send($packet, $packet.Length, $endpoint) | Out-Null
   $client.Close()
-  Write-Log -Message "Magic packet sent — target should wake shortly." -Color Green
+  Write-Log -Message "Magic packet sent - target should wake shortly." -Color Green
 }
 catch {
   Write-Log -Message "Failed to send magic packet: $_" -Color Red

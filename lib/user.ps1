@@ -1,4 +1,4 @@
-﻿function Get-UserInfo {
+function Get-UserInfo {
   <#
     .SYNOPSIS
       Get-UserInfo - Retrieves information about the current user, including their username, administrator status, and SID.
@@ -20,9 +20,9 @@
   $isAdmin = (New-Object System.Security.Principal.WindowsPrincipal($user)).IsInRole([System.Security.Principal.WindowsBuiltInRole]::Administrator)
 
   return @{
-    UserName        = $user.Name
+    UserName = $user.Name
     IsAdministrator = $isAdmin
-    SID             = $user.User.Value
+    SID = $user.User.Value
   }
 }
 

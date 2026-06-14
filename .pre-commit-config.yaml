@@ -1,0 +1,25 @@
+# ref: https://github.com/pre-commit/pre-commit/issues/1930
+# default_language_version:
+#   ruby: 3.2.1
+repos:
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v2.3.0
+    hooks:
+      - id: check-yaml
+      - id: end-of-file-fixer
+      - id: trailing-whitespace
+
+  # Local hooks
+  - repo: local
+    hooks:
+      - id: powershell-format
+        name: PowerShell format check
+        entry: pwsh -NoProfile -ExecutionPolicy Bypass -File ./format.ps1 -Check
+        language: system
+        pass_filenames: false
+
+      - id: psscriptanalyzer
+        name: PSScriptAnalyzer
+        entry: pwsh -NoProfile -ExecutionPolicy Bypass -File ./lint.ps1
+        language: system
+        pass_filenames: false

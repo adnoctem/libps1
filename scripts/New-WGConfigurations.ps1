@@ -1,8 +1,8 @@
-﻿#Requires -Version 5.1
+#Requires -Version 5.1
 
 <#
 .SYNOPSIS
-  Generates WireGuard configuration files for local users based on a template and data exported from pfSense. 
+  Generates WireGuard configuration files for local users based on a template and data exported from pfSense.
 
 .DESCRIPTION
   This script reads a template configuration file (wg.conf.tpl) and a pfSense export (pfsense.conf) to create individual WireGuard configuration files for each user. It matches users based on their folder names and the peer information in the pfSense export, replacing placeholders in the template with actual values such as private keys, public keys, pre-shared keys, and allowed IPs.
@@ -40,7 +40,7 @@ param (
     Mandatory = $true,
     HelpMessage = "The path to the template configuration file (default: wg.conf.tpl)."
   )]
-  [string]$RootDirectory = $PSScriptRoot,
+  [string]$RootDirectory,
 
   [Parameter(
     Position = 2,
@@ -115,7 +115,7 @@ $pfSensePath = Join-Path $RootDirectory $PfSensePath
 
 # check for required file and load content, otherwise throw an error for missing pfSense export
 if (-not (Test-Path $pfSensePath)) {
-  Throw "Required file '$PfSensePath' is missing from the root directory. Please download the tunnel export from pfSense and place it in the script's directory."
+  throw "Required file '$PfSensePath' is missing from the root directory. Please download the tunnel export from pfSense and place it in the script's directory."
 }
 else {
   $pfSenseExportContent = Get-Content -Path $pfSensePath -Raw
@@ -144,7 +144,10 @@ foreach ($m in $rgx_matches) {
   $psk = if ($content -match "PresharedKey\s*=\s*(.*)") { $Matches[1].Trim() }
   # Extract the IP/CIDR (e.g., 192.168.99.12/32)
   $ip = if ($content -match "AllowedIPs\s*=\s*(.*)") { $Matches[1].Trim() }
-  $peerLookup[$name] = @{ PSK = $psk; IP = $ip }
+  $peerLookup[$name] = @{
+    PSK = $psk
+    IP = $ip
+  }
 }
 
 # 2. Iterate through local user folders to build the configs

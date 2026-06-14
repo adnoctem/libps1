@@ -1,4 +1,4 @@
-﻿# ─── Internal ────────────────────────────────────────────────────────────────
+# --- Internal ----------------------------------------------------------------
 
 function Resolve-IPv6PrefixData {
   # Extracts the IPv6 address, masked prefix, and prefix length from a resolved
@@ -39,8 +39,8 @@ function Resolve-IPv6PrefixData {
     }
 
     return [PSCustomObject]@{
-      Address      = $ipv6
-      Prefix       = [System.Net.IPAddress]::new($prefixBytes).ToString()
+      Address = $ipv6
+      Prefix = [System.Net.IPAddress]::new($prefixBytes).ToString()
       PrefixLength = $prefixLength
     }
   }
@@ -48,7 +48,7 @@ function Resolve-IPv6PrefixData {
   return $null
 }
 
-# ─── Adapter resolution ───────────────────────────────────────────────────────
+# --- Adapter resolution -------------------------------------------------------
 
 function Get-DefaultNetworkAdapter {
   <#
@@ -77,9 +77,9 @@ function Get-DefaultNetworkAdapter {
   )
 
   $defaultRoute = Get-NetRoute -DestinationPrefix '0.0.0.0/0' -ErrorAction SilentlyContinue |
-  Where-Object { $_.NextHop -ne '0.0.0.0' } |
-  Sort-Object -Property RouteMetric |
-  Select-Object -First 1
+    Where-Object { $_.NextHop -ne '0.0.0.0' } |
+    Sort-Object -Property RouteMetric |
+    Select-Object -First 1
 
   if ($null -eq $defaultRoute) {
     $message = "No default IPv4 route found."
@@ -123,15 +123,15 @@ function Get-DefaultNetworkAdapter {
   }
 
   return [PSCustomObject]@{
-    Name          = $netAdapter.Name
-    ifIndex       = $defaultRoute.ifIndex
+    Name = $netAdapter.Name
+    ifIndex = $defaultRoute.ifIndex
     PhysicalMedia = $netAdapter.PhysicalMediaType
-    NetAdapter    = $netAdapter
-    CimConfig     = $cimConfig
+    NetAdapter = $netAdapter
+    CimConfig = $cimConfig
   }
 }
 
-# ─── Address retrieval ────────────────────────────────────────────────────────
+# --- Address retrieval --------------------------------------------------------
 
 function Get-IPAddress {
   <#
@@ -167,8 +167,8 @@ function Get-IPAddress {
   }
   else {
     $global = $Adapter.CimConfig.IPAddress |
-    Where-Object { $_ -match ':' -and $_ -notmatch '^fe80' } |
-    Select-Object -First 1
+      Where-Object { $_ -match ':' -and $_ -notmatch '^fe80' } |
+      Select-Object -First 1
 
     if ($null -ne $global) {
       $global
@@ -349,7 +349,7 @@ function Get-MACAddress {
   return $mac
 }
 
-# ─── Network / prefix ─────────────────────────────────────────────────────────
+# --- Network / prefix ---------------------------------------------------------
 
 function Get-NetworkPrefix {
   <#
@@ -441,7 +441,7 @@ function Get-NetworkPrefixCIDR {
     if ($null -eq $prefix -or $null -eq $mask) { return $null }
 
     $cidr = (([System.Net.IPAddress]::Parse($mask).GetAddressBytes() |
-        ForEach-Object { [Convert]::ToString($_, 2) }) -join '').Replace('0', '').Length
+          ForEach-Object { [Convert]::ToString($_, 2) }) -join '').Replace('0', '').Length
 
     return "$prefix/$cidr"
   }
@@ -496,7 +496,7 @@ function Get-MulticastAddress {
     .SYNOPSIS
       Returns the solicited-node multicast address for the default adapter's IPv6 address.
     .DESCRIPTION
-      Computes the solicited-node multicast address per RFC 4291 §2.7.1 by combining
+      Computes the solicited-node multicast address per RFC 4291 section 2.7.1 by combining
       the ff02::1:ff00:0/104 prefix with the lower 24 bits of the unicast address.
       Used by Neighbor Discovery as the IPv6 replacement for ARP.
     .PARAMETER Adapter
@@ -530,7 +530,7 @@ function Get-MulticastAddress {
   return [System.Net.IPAddress]::new($multicastBytes).ToString()
 }
 
-# ─── Validation ───────────────────────────────────────────────────────────────
+# --- Validation ---------------------------------------------------------------
 
 function Test-IPv4Address {
   <#
@@ -538,7 +538,7 @@ function Test-IPv4Address {
       Returns $true if the input is a valid IPv4 address per RFC 791.
     .DESCRIPTION
       Validates via arithmetic decomposition: four dot-separated decimal octets,
-      each in 0–255, no leading zeros. Does not use regex.
+      each in 0-255, no leading zeros. Does not use regex.
     .PARAMETER Address
       The string to validate.
     .OUTPUTS

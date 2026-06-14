@@ -1,4 +1,4 @@
-﻿#Requires -Version 2.0
+#Requires -Version 2.0
 #Requires -Module ActiveDirectory
 
 <#
@@ -67,7 +67,7 @@ Import-Module ActiveDirectory -Force
 # -------------------------------------------------------
 
 $properties = [PSCustomObject]@{
-  Users     = @(
+  Users = @(
     # Windows AD specific
     "sAMAccountName",
     "userPrincipalName",
@@ -112,7 +112,7 @@ $properties = [PSCustomObject]@{
     "operatingSystemVersion"
   )
 
-  Groups    = @(
+  Groups = @(
     # Windows AD specific
     "cn",
     "name",
@@ -132,16 +132,16 @@ $fmt = (Get-Culture).TextInfo
 # Distinguish between PowerShell 3 and later versions since [PSCustomObject] is not available in PS2
 if ($PSVersionTable.PSVersion.Major -ge 3) {
   $obj = [PSCustomObject]@{
-    Users     = $null
+    Users = $null
     Computers = $null
-    Groups    = $null
+    Groups = $null
   }
 }
 else {
   $obj = New-Object PSObject -Property @{
-    Users     = $null
+    Users = $null
     Computers = $null
-    Groups    = $null
+    Groups = $null
   }
 }
 
@@ -164,8 +164,8 @@ switch ($Resource) {
     $obj.Groups = Get-ADGroup -Filter * -Properties $properties.Groups
   }
 
-  Default {
-    Throw("Invalid resource specified. Use one of: ('Users', 'Computers', 'Groups', 'All').")
+  default {
+    throw("Invalid resource specified. Use one of: ('Users', 'Computers', 'Groups', 'All').")
   }
 }
 
@@ -173,7 +173,7 @@ switch ($Resource) {
 #
 # ref: https://stackoverflow.com/questions/39825440/check-if-a-path-is-a-folder-or-a-file-in-powershell
 if (Test-Path -Path $OutputPath -PathType Leaf) {
-  Throw("OutputPath is a file. Please provide a directory path.")
+  throw("OutputPath is a file. Please provide a directory path.")
 }
 
 $obj.PSObject.Properties | ForEach-Object {

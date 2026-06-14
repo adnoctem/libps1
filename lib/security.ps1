@@ -1,4 +1,4 @@
-﻿function Get-DefenderThreatDetection {
+function Get-DefenderThreatDetection {
   <#
     .SYNOPSIS
       Retrieves Microsoft Defender threat detections, optionally filtered by date.
@@ -174,8 +174,10 @@ function Get-DefenderThreatDescriptionURL {
     $ThreatName
   )
 
-  $encoded = [System.Web.HttpUtility]::UrlEncode($ThreatName)
-  return "https://www.microsoft.com/en-us/wdsi/threats/threat/$encoded"
+  process {
+    $encoded = [System.Web.HttpUtility]::UrlEncode($ThreatName)
+    return "https://www.microsoft.com/en-us/wdsi/threats/threat/$encoded"
+  }
 }
 
 function Find-NewlyWrittenObject {
@@ -246,19 +248,19 @@ function Find-NewlyWrittenObject {
   Write-Log -Message "  Root path: $Path" -Color Gray
 
   $items = Get-ChildItem -LiteralPath $Path -Recurse -ErrorAction SilentlyContinue |
-  Where-Object { -not $_.PSIsContainer -and $_.LastWriteTime -gt $windowStart -and $_.LastWriteTime -lt $windowEnd } |
-  Sort-Object LastWriteTime |
-  Select-Object LastWriteTime,
-  LastWriteTimeUtc,
-  LastAccessTime,
-  LastAccessTimeUtc,
-  CreationTime,
-  CreationTimeUtc,
-  Mode,
-  IsReadOnly,
-  Length,
-  Extension,
-  FullName
+    Where-Object { -not $_.PSIsContainer -and $_.LastWriteTime -gt $windowStart -and $_.LastWriteTime -lt $windowEnd } |
+    Sort-Object LastWriteTime |
+    Select-Object LastWriteTime,
+    LastWriteTimeUtc,
+    LastAccessTime,
+    LastAccessTimeUtc,
+    CreationTime,
+    CreationTimeUtc,
+    Mode,
+    IsReadOnly,
+    Length,
+    Extension,
+    FullName
 
   Write-Log -Message "  -> $($items.Count) file(s) found" -Color Gray
 

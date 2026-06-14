@@ -1,4 +1,4 @@
-﻿#Requires -Version 2.0
+#Requires -Version 2.0
 #Requires -Module ActiveDirectory
 
 <#
@@ -52,7 +52,7 @@ param (
 )
 
 if (Test-Path -Path $OutputPath -PathType Leaf) {
-  Throw("OutputPath is a file. Please provide a directory path.")
+  throw("OutputPath is a file. Please provide a directory path.")
 }
 
 Export-DhcpServer -ComputerName $ComputerName -ScopeId $Scope -File $OutputPath -Force

@@ -1,4 +1,4 @@
-﻿#Requires -Version 5.0
+#Requires -Version 5.0
 
 <#
 .SYNOPSIS
@@ -32,7 +32,7 @@
 
 .EXAMPLE
   PS> ./Unblock-Files.ps1 -Path 'C:\Models' -Filter '3mf,jpg,png'
-  Recursively unblocks all .3mf, .jpg, and .png files — useful for 3D printing
+  Recursively unblocks all .3mf, .jpg, and .png files - useful for 3D printing
   assets or images downloaded from a browser.
 
 .EXAMPLE
@@ -76,14 +76,16 @@ param (
   $DryRun
 )
 
-# Bootstrap: import the libps1 module
-$modulePath = Join-Path -Path $PSScriptRoot -ChildPath '..\..\lib\libps1.psd1' -Resolve
-Import-Module $modulePath -Force -ErrorAction Stop
+# ---- Module import -----------------------------------------------------------
+$root = Split-Path (Split-Path $PSScriptRoot -Parent) -Parent
+$module = Join-Path $root 'lib/libps1.psm1'
+Import-Module $module -Force
+# -----------------------------------------------------------------------------
 
 # When -DryRun is active, enable WhatIf for downstream lib calls and log intent.
 if ($DryRun) {
   $WhatIfPreference = $true
-  Write-Log -Message "DRY RUN — no files will be modified`n" -Color Yellow
+  Write-Log -Message "DRY RUN - no files will be modified`n" -Color Yellow
 }
 
 # Validate the root path
@@ -95,20 +97,20 @@ if (-not (Test-Path -Path $Path -PathType Container)) {
 # Parse the filter into a case-insensitive extension regex.
 # Accepts 'pdf', '.pdf', 'pdf,jpg', '.pdf, .jpg' etc.
 $extensions = $Filter -split ',' |
-ForEach-Object { $_.Trim().TrimStart('.') } |
-Where-Object { $_ -ne '' }
+  ForEach-Object { $_.Trim().TrimStart('.') } |
+  Where-Object { $_ -ne '' }
 
 if ($extensions.Count -eq 0) {
-  Write-Log -Message 'No valid extensions found in -Filter — nothing to do.' -Color Red
+  Write-Log -Message 'No valid extensions found in -Filter - nothing to do.' -Color Red
   exit 1
 }
 
 $extensionPattern = '\.(' + ($extensions -join '|') + ')$'
-Write-Log -Message "Scanning '$Path' for files matching: $($extensions -join ', ') …" -Color Yellow
+Write-Log -Message "Scanning '$Path' for files matching: $($extensions -join ', ') ..." -Color Yellow
 
 # Collect matching files
 $files = @(Get-ChildItem -Path $Path -Recurse -File -ErrorAction SilentlyContinue |
-  Where-Object { $_.Extension -match $extensionPattern })
+    Where-Object { $_.Extension -match $extensionPattern })
 
 if ($files.Count -eq 0) {
   Write-Log -Message '  -> No matching files found.' -Color Gray
@@ -135,14 +137,14 @@ foreach ($file in $files) {
     $unblocked++
   }
   catch {
-    Write-Log -Message "FAILED: $relativePath — $_" -Color Red
+    Write-Log -Message "FAILED: $relativePath - $_" -Color Red
     $failed++
   }
 }
 
 # Summary
 if ($DryRun) {
-  Write-Log -Message "`nDRY RUN COMPLETE — $($files.Count) file(s) would have been unblocked" -Color Yellow
+  Write-Log -Message "`nDRY RUN COMPLETE - $($files.Count) file(s) would have been unblocked" -Color Yellow
 }
 else {
   Write-Log -Message "`nUnblocked: $unblocked  |  Failed: $failed  |  Total matched: $($files.Count)" -Color $(if ($failed -gt 0) { 'Yellow' } else { 'Green' })

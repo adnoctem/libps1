@@ -1,4 +1,4 @@
-﻿<#
+<#
 .SYNOPSIS
   Move files to a specified destination based on a custom regular expression.
 .DESCRIPTION
@@ -25,8 +25,6 @@ param (
 )
 
 Import-Module "$PSScriptRoot\..\lib\log.psm1" -Verbose
-
-$rgx = [regex]::Escape($regEx)
 
 try {
   $path = Resolve-Path $Source

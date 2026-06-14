@@ -1,6 +1,6 @@
 #Requires -Version 5.0
 
-# Shared native methods — compiled once and reused by Get-SystemMemory / Get-SystemUptime
+# Shared native methods - compiled once and reused by Get-SystemMemory / Get-SystemUptime
 if ($null -eq ('SysInfoNative' -as [type])) {
   Add-Type -TypeDefinition @'
 using System;
@@ -30,13 +30,56 @@ public class SysInfoNative {
 '@ -ErrorAction Stop
 }
 
+$script:SysInfoInvariantCulture = [System.Globalization.CultureInfo]::InvariantCulture
+
+function Format-SysInfoInvariant {
+  [OutputType([string])]
+  [CmdletBinding()]
+  param(
+    [Parameter(Mandatory = $true)]
+    [string]
+    $Format,
+
+    [Parameter(ValueFromRemainingArguments = $true)]
+    [object[]]
+    $ArgumentList
+  )
+
+  return [string]::Format($script:SysInfoInvariantCulture, $Format, $ArgumentList)
+}
+
+function Resolve-WindowsProductName {
+  [OutputType([string])]
+  [CmdletBinding()]
+  param(
+    [Parameter(Mandatory = $false)]
+    [AllowNull()]
+    [string]
+    $ProductName,
+
+    [Parameter(Mandatory = $false)]
+    [int]
+    $CurrentBuild = 0
+  )
+
+  if ([string]::IsNullOrWhiteSpace($ProductName)) {
+    return $ProductName
+  }
+
+  if ($CurrentBuild -ge 22000 -and $ProductName -like 'Windows 10*') {
+    return $ProductName -replace '^Windows 10', 'Windows 11'
+  }
+
+  return $ProductName
+}
+
 function Get-OSBuildNumber {
   <#
     .SYNOPSIS
       Returns the Windows build number as an integer.
     .DESCRIPTION
       Reads CurrentBuild from HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion.
-      This is a single cheap registry read — far faster than Get-CimInstance
+      This is a single cheap registry read - far faster than Get-CimInstance
       or any WMI-based approach.  Returns e.g. 22621 (22H2), 22631 (23H2).
     .EXAMPLE
       PS> Get-OSBuildNumber
@@ -81,7 +124,9 @@ function Get-OSDisplayVersion {
     $display = Get-ItemPropertyValue -LiteralPath 'HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion' -Name 'DisplayVersion' -ErrorAction Stop
     if ($display) { return $display }
   }
-  catch { }
+  catch {
+    Write-Verbose "DisplayVersion was not available; falling back to ReleaseId."
+  }
 
   $releaseId = Get-ItemPropertyValue -LiteralPath 'HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion' -Name 'ReleaseId' -ErrorAction Stop
   return $releaseId
@@ -131,7 +176,9 @@ function Get-OSProductName {
   [CmdletBinding()]
   param()
 
-  return Get-ItemPropertyValue -LiteralPath 'HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion' -Name 'ProductName' -ErrorAction Stop
+  $key = 'HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion'
+  $props = Get-ItemProperty -LiteralPath $key -ErrorAction Stop
+  return Resolve-WindowsProductName -ProductName $props.ProductName -CurrentBuild ([int]$props.CurrentBuild)
 }
 
 function Get-OSVersionInfo {
@@ -163,19 +210,26 @@ function Get-OSVersionInfo {
 
   $installDate = $null
   if ($props.InstallDate) {
-    try { $installDate = [DateTime]::FromFileTimeUtc([int64]$props.InstallDate) }
-    catch { }
+    try {
+      $unixEpochUtc = [DateTime]::SpecifyKind([DateTime]'1970-01-01T00:00:00Z', [DateTimeKind]::Utc)
+      $installDate = $unixEpochUtc.AddSeconds([int64]$props.InstallDate).ToLocalTime()
+    }
+    catch {
+      Write-Verbose "Unable to convert InstallDate registry value: $($props.InstallDate)"
+    }
   }
 
+  $currentBuild = [int]$props.CurrentBuild
+
   [PSCustomObject]@{
-    ProductName    = $props.ProductName
-    EditionID      = $props.EditionID
+    ProductName = Resolve-WindowsProductName -ProductName $props.ProductName -CurrentBuild $currentBuild
+    EditionID = $props.EditionID
     DisplayVersion = $props.DisplayVersion
-    CurrentBuild   = [int]$props.CurrentBuild
-    UBR            = if ($props.UBR) { [int]$props.UBR } else { 0 }
-    ReleaseId      = $props.ReleaseId
-    BuildBranch    = $props.BuildBranch
-    InstallDate    = $installDate
+    CurrentBuild = $currentBuild
+    UBR = if ($null -ne $props.UBR) { [int]$props.UBR } else { 0 }
+    ReleaseId = $props.ReleaseId
+    BuildBranch = $props.BuildBranch
+    InstallDate = $installDate
     RegisteredOwner = $props.RegisteredOwner
   }
 }
@@ -183,7 +237,7 @@ function Get-OSVersionInfo {
 function Get-SystemMemory {
   <#
     .SYNOPSIS
-      Returns physical memory statistics — total, available, used, and load
+      Returns physical memory statistics - total, available, used, and load
       percentage.
     .DESCRIPTION
       Uses kernel32!GlobalMemoryStatusEx via P/Invoke (no CIM/WMI overhead).
@@ -211,31 +265,32 @@ function Get-SystemMemory {
     return $null
   }
 
-  $totalGiB       = [math]::Round($memInfo.ullTotalPhys / 1GB, 2)
-  $availableGiB   = [math]::Round($memInfo.ullAvailPhys / 1GB, 2)
-  $usedGiB        = [math]::Round(($memInfo.ullTotalPhys - $memInfo.ullAvailPhys) / 1GB, 2)
+  $totalGiB = [math]::Round($memInfo.ullTotalPhys / 1GB, 2)
+  $availableGiB = [math]::Round($memInfo.ullAvailPhys / 1GB, 2)
+  $usedGiB = [math]::Round(($memInfo.ullTotalPhys - $memInfo.ullAvailPhys) / 1GB, 2)
 
   [PSCustomObject]@{
-    TotalBytes       = $memInfo.ullTotalPhys
-    AvailableBytes   = $memInfo.ullAvailPhys
-    UsedBytes        = $memInfo.ullTotalPhys - $memInfo.ullAvailPhys
-    LoadPercent      = $memInfo.dwMemoryLoad
-    TotalGiB         = $totalGiB
-    AvailableGiB     = $availableGiB
-    UsedGiB          = $usedGiB
+    TotalBytes = $memInfo.ullTotalPhys
+    AvailableBytes = $memInfo.ullAvailPhys
+    UsedBytes = $memInfo.ullTotalPhys - $memInfo.ullAvailPhys
+    LoadPercent = $memInfo.dwMemoryLoad
+    TotalGiB = Format-SysInfoInvariant '{0:0.##}' $totalGiB
+    AvailableGiB = Format-SysInfoInvariant '{0:0.##}' $availableGiB
+    UsedGiB = Format-SysInfoInvariant '{0:0.##}' $usedGiB
   }
 }
 
 function Get-SystemDisk {
   <#
     .SYNOPSIS
-      Returns disk usage information for all fixed logical drives.
+      Returns disk usage information for fixed volumes backed by physical disks.
     .DESCRIPTION
-      Uses [System.IO.DriveInfo]::GetDrives() — pure .NET, no CIM/WMI overhead.
-      Filters to fixed (non-removable) drives that are ready.  Returns total
-      size, free space, used space, and the filesystem type.
+      Uses Win32_DiskDrive associations to include only volumes that resolve
+      back to a physical disk. Provider-backed and cloud-mounted drives such as
+      Google Drive are ignored. Filters to fixed drives by default and returns
+      total size, free space, used space, and the filesystem type.
     .PARAMETER All
-      Include removable, network, and CD-ROM drives in addition to fixed drives.
+      Include non-fixed volumes when they are backed by a physical disk.
     .EXAMPLE
       PS> Get-SystemDisk
     .EXAMPLE
@@ -257,30 +312,50 @@ function Get-SystemDisk {
     $All = $false
   )
 
-  $drives = [System.IO.DriveInfo]::GetDrives()
-  if (-not $All) {
-    $drives = $drives | Where-Object { $_.DriveType -eq 'Fixed' }
+  $logicalDisksByDeviceId = @{}
+  $physicalDisks = Get-CimInstance -ClassName Win32_DiskDrive -ErrorAction Stop
+
+  foreach ($physicalDisk in $physicalDisks) {
+    $partitions = Get-CimAssociatedInstance -InputObject $physicalDisk -Association Win32_DiskDriveToDiskPartition -ErrorAction Stop
+    foreach ($partition in $partitions) {
+      $logicalDisks = Get-CimAssociatedInstance -InputObject $partition -Association Win32_LogicalDiskToPartition -ErrorAction Stop
+      foreach ($logicalDisk in $logicalDisks) {
+        if (-not $All -and [int]$logicalDisk.DriveType -ne 3) { continue }
+        if ([string]::IsNullOrWhiteSpace($logicalDisk.DeviceID)) { continue }
+        $logicalDisksByDeviceId[$logicalDisk.DeviceID] = $logicalDisk
+      }
+    }
   }
 
-  foreach ($drive in $drives) {
-    if (-not $drive.IsReady) { continue }
+  foreach ($deviceId in ($logicalDisksByDeviceId.Keys | Sort-Object)) {
+    $disk = $logicalDisksByDeviceId[$deviceId]
+    if ($null -eq $disk.Size -or [uint64]$disk.Size -eq 0) { continue }
 
-    $totalGiB     = [math]::Round($drive.TotalSize / 1GB, 2)
-    $freeGiB      = [math]::Round($drive.AvailableFreeSpace / 1GB, 2)
-    $usedGiB      = [math]::Round(($drive.TotalSize - $drive.AvailableFreeSpace) / 1GB, 2)
-    $percentFree  = [math]::Round($drive.AvailableFreeSpace * 100.0 / $drive.TotalSize, 1)
+    $totalBytes = [uint64]$disk.Size
+    $freeBytes = [uint64]$disk.FreeSpace
+    $totalGiB = [math]::Round($totalBytes / 1GB, 2)
+    $freeGiB = [math]::Round($freeBytes / 1GB, 2)
+    $usedGiB = [math]::Round(($totalBytes - $freeBytes) / 1GB, 2)
+    $percentFree = [math]::Round($freeBytes * 100.0 / $totalBytes, 1)
 
     [PSCustomObject]@{
-      Name          = $drive.Name.TrimEnd('\')
-      Label         = $drive.VolumeLabel
-      Type          = $drive.DriveType.ToString()
-      FileSystem    = $drive.DriveFormat
-      TotalGiB      = $totalGiB
-      FreeGiB       = $freeGiB
-      UsedGiB       = $usedGiB
-      PercentFree   = $percentFree
-      TotalBytes    = $drive.TotalSize
-      FreeBytes     = $drive.AvailableFreeSpace
+      Name = $disk.DeviceID
+      Label = $disk.VolumeName
+      Type = switch ([int]$disk.DriveType) {
+        2 { 'Removable' }
+        3 { 'Fixed' }
+        4 { 'Network' }
+        5 { 'CDRom' }
+        6 { 'Ram' }
+        default { 'Unknown' }
+      }
+      FileSystem = $disk.FileSystem
+      TotalGiB = Format-SysInfoInvariant '{0:0.##}' $totalGiB
+      FreeGiB = Format-SysInfoInvariant '{0:0.##}' $freeGiB
+      UsedGiB = Format-SysInfoInvariant '{0:0.##}' $usedGiB
+      PercentFree = Format-SysInfoInvariant '{0:0.#}' $percentFree
+      TotalBytes = $totalBytes
+      FreeBytes = $freeBytes
     }
   }
 }
@@ -314,11 +389,13 @@ function Get-Hostname {
     $fqdn = $entry.HostName
     if ($fqdn -eq $hostname) { $fqdn = $null }
   }
-  catch { }
+  catch {
+    Write-Verbose "Unable to resolve FQDN for hostname: $hostname"
+  }
 
   [PSCustomObject]@{
     Hostname = $hostname
-    FQDN     = $fqdn
+    FQDN = $fqdn
   }
 }
 
@@ -328,7 +405,7 @@ function Get-SystemUptime {
       Returns the system uptime (time since last boot).
     .DESCRIPTION
       Uses kernel32!GetTickCount64 via P/Invoke for a non-wrapping, high-
-      precision uptime value — no CIM/WMI overhead.  Returns the raw tick
+      precision uptime value - no CIM/WMI overhead.  Returns the raw tick
       count, total milliseconds, and a human-readable breakdown.
     .EXAMPLE
       PS> Get-SystemUptime
@@ -350,13 +427,13 @@ function Get-SystemUptime {
 
   [PSCustomObject]@{
     TotalMilliseconds = $ticksMs
-    Days              = $span.Days
-    Hours             = $span.Hours
-    Minutes           = $span.Minutes
-    Seconds           = $span.Seconds
-    TotalHours        = [math]::Round($span.TotalHours, 1)
-    TotalDays         = [math]::Round($span.TotalDays, 1)
-    Display           = ('{0}d {1:D2}h {2:D2}m {3:D2}s' -f $span.Days, $span.Hours, $span.Minutes, $span.Seconds)
+    Days = $span.Days
+    Hours = $span.Hours
+    Minutes = $span.Minutes
+    Seconds = $span.Seconds
+    TotalHours = Format-SysInfoInvariant '{0:0.#}' ([math]::Round($span.TotalHours, 1))
+    TotalDays = Format-SysInfoInvariant '{0:0.#}' ([math]::Round($span.TotalDays, 1))
+    Display = Format-SysInfoInvariant '{0}d {1:D2}h {2:D2}m {3:D2}s' $span.Days $span.Hours $span.Minutes $span.Seconds
   }
 }
 
@@ -366,9 +443,9 @@ function Get-SystemInfo {
       Returns a comprehensive system information snapshot (fetch-style).
     .DESCRIPTION
       Assembles OS version, memory, disk, hostname, and uptime into a single
-      structured object.  Every data source is chosen to avoid expensive CIM/
-      WMI calls — the function uses registry reads, .NET APIs, and lightweight
-      P/Invoke where needed.
+      structured object.  Disk data is resolved through physical disk
+      associations; other data sources use registry reads, .NET APIs, and
+      lightweight P/Invoke where possible.
     .EXAMPLE
       PS> Get-SystemInfo | Format-List
     .EXAMPLE
@@ -384,24 +461,24 @@ function Get-SystemInfo {
   [CmdletBinding()]
   param()
 
-  $os    = Get-OSVersionInfo
-  $mem   = Get-SystemMemory
-  $disks = Get-SystemDisk
-  $host  = Get-Hostname
-  $up    = Get-SystemUptime
+  $_os = Get-OSVersionInfo
+  $_mem = Get-SystemMemory
+  $_disks = Get-SystemDisk
+  $_host = Get-Hostname
+  $_up = Get-SystemUptime
 
   [PSCustomObject]@{
-    OSProductName   = $os.ProductName
-    OSEdition       = $os.EditionID
-    OSVersion       = $os.DisplayVersion
-    OSBuild         = $os.CurrentBuild
-    OSUBRev         = $os.UBR
-    Hostname        = $host.Hostname
-    FQDN            = $host.FQDN
-    TotalMemoryGiB  = $mem.TotalGiB
-    MemoryLoadPct   = $mem.LoadPercent
-    Disks           = ($disks | ForEach-Object { '{0} {1}GiB/{2}GiB ({3}% free)' -f $_.Name, $_.FreeGiB, $_.TotalGiB, $_.PercentFree }) -join ' | '
-    Uptime          = $up.Display
-    InstallDate     = $os.InstallDate
+    OSProductName = $_os.ProductName
+    OSEdition = $_os.EditionID
+    OSVersion = $_os.DisplayVersion
+    OSBuild = $_os.CurrentBuild
+    OSUBRev = $_os.UBR
+    Hostname = $_host.Hostname
+    FQDN = $_host.FQDN
+    TotalMemoryGiB = $_mem.TotalGiB
+    MemoryLoadPct = $_mem.LoadPercent
+    Disks = ($_disks | ForEach-Object { Format-SysInfoInvariant '{0} {1}GiB/{2}GiB ({3}% free)' $_.Name $_.FreeGiB $_.TotalGiB $_.PercentFree }) -join ' | '
+    Uptime = $_up.Display
+    InstallDate = $_os.InstallDate
   }
 }

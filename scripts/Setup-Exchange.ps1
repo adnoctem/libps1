@@ -1,4 +1,4 @@
-﻿
+
 <#
 .SYNOPSIS
   Install Windows features required for Microsoft Exchange Server.
@@ -51,4 +51,4 @@ $packages = @(
 
 $str = $packages -join ", "
 
-Write-Host "Installing Exchange packages: $str"
+Write-Output "Installing Exchange packages: $str"

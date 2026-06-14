@@ -1,4 +1,4 @@
-﻿#Requires -Version 5.0
+#Requires -Version 5.0
 
 <#
 .SYNOPSIS
@@ -8,7 +8,7 @@
   Configures the HKCU:\Control Panel\Mouse registry values that control pointer
   acceleration.  By default the script disables acceleration; use -Undo to
   restore the Windows defaults.  The -Instant switch applies the change
-  immediately via a user32.dll API call — no logout required.  -DryRun
+  immediately via a user32.dll API call - no logout required.  -DryRun
   previews every action without touching the system.
 
 .PARAMETER Undo
@@ -19,7 +19,7 @@
 
 .PARAMETER Instant
   Apply the registry change instantly via SystemParametersInfo.
-  NOT supported together with -Undo — restart the machine to revert instead.
+  NOT supported together with -Undo - restart the machine to revert instead.
 
 .EXAMPLE
   PS> ./Disable-PointerAcceleration.ps1
@@ -28,7 +28,7 @@
 
 .EXAMPLE
   PS> ./Disable-PointerAcceleration.ps1 -Instant
-  Disables pointer acceleration and applies the change immediately — no restart
+  Disables pointer acceleration and applies the change immediately - no restart
   needed.
 
 .EXAMPLE
@@ -72,19 +72,21 @@ param (
 
   [Parameter(
     Mandatory = $false,
-    HelpMessage = 'Apply the registry change instantly via SystemParametersInfo. NOT supported together with -Undo — restart the machine to revert instead.'
+    HelpMessage = 'Apply the registry change instantly via SystemParametersInfo. NOT supported together with -Undo - restart the machine to revert instead.'
   )]
   [switch]
   $Instant
 )
 
-# Bootstrap: import the libps1 module
-$modulePath = Join-Path -Path $PSScriptRoot -ChildPath '..\..\lib\libps1.psd1' -Resolve
-Import-Module $modulePath -Force -ErrorAction Stop
+# ---- Module import -----------------------------------------------------------
+$root = Split-Path (Split-Path $PSScriptRoot -Parent) -Parent
+$module = Join-Path $root 'lib/libps1.psm1'
+Import-Module $module -Force
+# -----------------------------------------------------------------------------
 
 # Validation
 if ($Undo -and $Instant) {
-  Write-Log -Message '-Instant cannot be combined with -Undo. The instantaneous change is forwarded directly to the mouse driver and cannot be reverted programmatically — please restart your machine to undo pointer acceleration settings.' -Color Red
+  Write-Log -Message '-Instant cannot be combined with -Undo. The instantaneous change is forwarded directly to the mouse driver and cannot be reverted programmatically - please restart your machine to undo pointer acceleration settings.' -Color Red
   exit 1
 }
 
@@ -93,7 +95,7 @@ if ($Undo -and $Instant) {
 # so setting $WhatIfPreference causes them to report intent without mutating.
 if ($DryRun) {
   $WhatIfPreference = $true
-  Write-Log -Message "DRY RUN — no changes will be applied`n" -Color Yellow
+  Write-Log -Message "DRY RUN - no changes will be applied`n" -Color Yellow
 }
 
 # Registry target and values
@@ -103,9 +105,21 @@ if ($DryRun) {
 #   Enabled  (Windows default):  "1", "6", "10"
 $registryPath = 'HKCU:\Control Panel\Mouse'
 $mouseValues = @(
-  @{ Name = 'MouseSpeed'      ; Off = '0'  ; On = '1' }
-  @{ Name = 'MouseThreshold1' ; Off = '0'  ; On = '6' }
-  @{ Name = 'MouseThreshold2' ; Off = '0'  ; On = '10' }
+  @{
+    Name = 'MouseSpeed'
+    Off = '0'
+    On = '1'
+  }
+  @{
+    Name = 'MouseThreshold1'
+    Off = '0'
+    On = '6'
+  }
+  @{
+    Name = 'MouseThreshold2'
+    Off = '0'
+    On = '10'
+  }
 )
 
 $targetLabel = if ($Undo) { 'Enabling' } else { 'Disabling' }
@@ -126,13 +140,13 @@ foreach ($entry in $mouseValues) {
     }
   }
   else {
-    Write-Log -Message "  -> FAILED — could not write '$($entry.Name)'" -Color Red
+    Write-Log -Message "  -> FAILED - could not write '$($entry.Name)'" -Color Red
   }
 }
 
 # Instant apply (only for disabling, never for undo)
 if ($Instant -and -not $DryRun -and -not $Undo) {
-  Write-Log -Message "`nApplying changes instantly via SystemParametersInfo …" -Color Yellow
+  Write-Log -Message "`nApplying changes instantly via SystemParametersInfo ..." -Color Yellow
 
   Add-Type -TypeDefinition @'
 using System;
@@ -146,10 +160,10 @@ public class NativeMethods {
   # SPI_SETMOUSE = 0x0004, SPIF_SENDCHANGE = 0x0002
   $applied = [NativeMethods]::SystemParametersInfo(0x0004, 0, [IntPtr]::Zero, 0x0002)
   if ($applied) {
-    Write-Log -Message '  -> Done — pointer acceleration settings applied immediately.' -Color Green
+    Write-Log -Message '  -> Done - pointer acceleration settings applied immediately.' -Color Green
   }
   else {
-    Write-Log -Message '  -> Warning: SystemParametersInfo returned false — the change may not have been applied instantly. Try signing out and back in.' -Color Yellow
+    Write-Log -Message '  -> Warning: SystemParametersInfo returned false - the change may not have been applied instantly. Try signing out and back in.' -Color Yellow
   }
 }
 elseif ($Instant -and $DryRun) {
@@ -158,7 +172,7 @@ elseif ($Instant -and $DryRun) {
 
 # Summary
 if ($DryRun) {
-  Write-Log -Message "`nDRY RUN COMPLETE — no changes were made" -Color Yellow
+  Write-Log -Message "`nDRY RUN COMPLETE - no changes were made" -Color Yellow
 }
 elseif ($anyChanges) {
   if ($Undo) {
@@ -172,5 +186,5 @@ elseif ($anyChanges) {
   }
 }
 else {
-  Write-Log -Message "`nAll registry values were already at the desired target — nothing to do." -Color Green
+  Write-Log -Message "`nAll registry values were already at the desired target - nothing to do." -Color Green
 }

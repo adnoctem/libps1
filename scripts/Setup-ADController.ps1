@@ -1,4 +1,4 @@
-﻿<#
+<#
 .SYNOPSIS
   Set up Windows Server Active Directory Domain Services and promote the current machine to a Domain Controller.
 .DESCRIPTION
@@ -38,11 +38,14 @@ param (
 $packages = @('AD-Domain-Services', 'VolumeActivation')
 $dsrm = Read-Host -AsSecureString -Prompt "Enter an Active Directory DSRM password"
 
+if (-not $dsrm) {
+  throw 'An Active Directory DSRM password is required.'
+}
 
 $pkg = $packages -join ", "
 # foreach ($pkg in $packages) {
 #   Write-Host "Installing package: $pkg"
 # }
-Write-Host "Installing packages: $pkg"
-Write-Host "Creating AD Forest for domain $Domain with mode: $Mode"
-Write-Host "Creating Administrator user with password $DSRM."
+Write-Output "Installing packages: $pkg"
+Write-Output "Creating AD Forest for domain $Domain with mode: $Mode"
+Write-Output 'Creating Administrator user with the supplied DSRM password.'

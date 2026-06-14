@@ -1,4 +1,4 @@
-﻿#Requires -Version 5.0
+#Requires -Version 5.0
 
 <#
 .SYNOPSIS
@@ -41,12 +41,11 @@ param (
   [string]$End
 )
 
-# ---- Module import ------------------------------------
-$root = Split-Path $PSScriptRoot -Parent
-$module = Join-Path -Path $root 'lib/libps1.psm1'
-
+# ---- Module import -----------------------------------------------------------
+$root = Split-Path (Split-Path (Split-Path $PSScriptRoot -Parent) -Parent) -Parent
+$module = Join-Path $root 'lib/libps1.psm1'
 Import-Module $module -Force
-# -------------------------------------------------------
+# -----------------------------------------------------------------------------
 
 # ---- Assembly import ------------------------------------
 $_searchPath = 'C:\Windows\assembly\GAC_MSIL\Microsoft.Office.Interop.Outlook'
@@ -54,13 +53,14 @@ $_searchFilter = 'Microsoft.Office.Interop.Outlook.dll'
 $_assembly = Get-ChildItem -LiteralPath $_searchPath `
   -Filter $_searchFilter `
   -Recurse |
-Select-Object -ExpandProperty FullName -Last 1
+  Select-Object -ExpandProperty FullName -Last 1
 
 Add-Type -AssemblyName $_assembly -ErrorAction Stop
 # -------------------------------------------------------
 
 
 $destination = Get-NewPath -Path 'OutlookArchive'
+Write-Output "Archiving Outlook mail received from $Start through $End."
 
 $_outlook = New-Object -com outlook.application
 

@@ -1,4 +1,4 @@
-﻿#Requires -Version 5.0
+#Requires -Version 5.0
 
 <#
 .SYNOPSIS
@@ -6,7 +6,7 @@
 
 .DESCRIPTION
   Applies a curated set of registry values under HKCU:\Software\Microsoft\Windows\
-  CurrentVersion\Explorer that control Explorer's behaviour — folder view, navigation
+  CurrentVersion\Explorer that control Explorer's behaviour - folder view, navigation
   pane, search preferences, and privacy settings.  Uses the libps1 registry helpers
   for idempotent, safe writes.  -Undo restores Windows defaults.  -Instant restarts
   Explorer so the changes take effect immediately.  -SysPrep mounts the
@@ -169,73 +169,563 @@ param (
   $ExportPath
 )
 
-# Bootstrap: import the libps1 module
-$modulePath = Join-Path -Path $PSScriptRoot -ChildPath '..\..\lib\libps1.psd1' -Resolve
-Import-Module $modulePath -Force -ErrorAction Stop
+# ---- Module import -----------------------------------------------------------
+$root = Split-Path (Split-Path $PSScriptRoot -Parent) -Parent
+$module = Join-Path $root 'lib/libps1.psm1'
+Import-Module $module -Force
+# -----------------------------------------------------------------------------
 
 # When -DryRun is active, enable WhatIf for all downstream lib calls.
 if ($DryRun) {
   $WhatIfPreference = $true
-  Write-Log -Message "DRY RUN — no changes will be applied`n" -Color Yellow
+  Write-Log -Message "DRY RUN - no changes will be applied`n" -Color Yellow
 }
 
-# ── SysPrep validation ────────────────────────────────────────────────
+# -- SysPrep validation ------------------------------------------------
 if ($SysPrep -and $Instant) {
   Write-Log -Message '-SysPrep cannot be combined with -Instant. SysPrep mode writes to the default user profile hive (mounted from disk); restarting Explorer would only affect the current user session.' -Color Red
   exit 1
 }
 
-# Registry target keys — when -SysPrep is active, redirect to the mounted
+# Registry target keys - when -SysPrep is active, redirect to the mounted
 # default user hive (HKU:\DefaultUser) instead of HKCU
 $regHive = if ($SysPrep) { 'HKU:\DefaultUser' } else { 'HKCU:' }
 $explorerKey = "$regHive\Software\Microsoft\Windows\CurrentVersion\Explorer"
 $advancedKey = "$explorerKey\Advanced"
 $cabinetStateKey = "$explorerKey\CabinetState"
 $searchPrefKey = "$explorerKey\Search\Preferences"
+$classesKey = "$regHive\Software\Classes"
+$galleryUserKey = "$classesKey\CLSID\{e88865ea-0e1c-4e20-9aa6-edcd0212c87c}"
+$homeUserKey = "$classesKey\CLSID\{f874310e-b6b7-47dc-bc84-b9e6b38f5903}"
+$oneDriveUserKey = "$classesKey\CLSID\{018D5C66-4533-4307-9B53-224DE2ED1FE6}"
+$navPaneGalleryKey = 'HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\Advanced\NavPane\ShowGallery'
+$navPaneHomeKey = 'HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\Advanced\NavPane\ShowHome'
+$navPaneOneDriveKey = 'HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\Advanced\NavPane\ShowOneDrive'
+$currentBuild = Get-OSBuildNumber
 
-# Explorer settings — each entry holds the registry path, value name, our
+# Explorer settings - each entry holds the registry path, value name, our
 # preferred value (Preferred), the Windows default (Default), and the
 # registry type.  A Default of $null means "remove the value" on undo.
 $explorerSettings = @(
-  # ── General tab ──
-  @{ Path = $explorerKey; Name = 'LaunchTo'; Preferred = 2; Default = 1; Type = 'DWord'; Description = 'Open File Explorer to: Home' }
-  @{ Path = $advancedKey; Name = 'SeparateProcess'; Preferred = 0; Default = $null; Type = 'DWord'; Description = 'Browse folders: Open each folder in the same window' }
-  @{ Path = $explorerKey; Name = 'ShowRecent'; Preferred = 0; Default = 1; Type = 'DWord'; Description = 'Privacy: Hide recently used files in Quick Access' }
-  @{ Path = $explorerKey; Name = 'ShowFrequent'; Preferred = 0; Default = 1; Type = 'DWord'; Description = 'Privacy: Hide frequently used folders in Quick Access' }
+  # -- General tab --
+  @{
+    Path = $explorerKey
+    Name = 'LaunchTo'
+    Preferred = 2
+    Default = 1
+    Type = 'DWord'
+    Description = 'Open File Explorer to: Home'
+  }
+  @{
+    Path = $advancedKey
+    Name = 'SeparateProcess'
+    Preferred = 0
+    Default = $null
+    Type = 'DWord'
+    Description = 'Browse folders: Open each folder in the same window'
+  }
+  @{
+    Path = $explorerKey
+    Name = 'ShowRecent'
+    Preferred = 0
+    Default = 1
+    Type = 'DWord'
+    Description = 'Privacy: Hide recently used files in Quick Access'
+  }
+  @{
+    Path = $explorerKey
+    Name = 'ShowFrequent'
+    Preferred = 0
+    Default = 1
+    Type = 'DWord'
+    Description = 'Privacy: Hide frequently used folders in Quick Access'
+  }
 
-  # ── View tab ──
-  @{ Path = $advancedKey; Name = 'IconsOnly'; Preferred = 0; Default = 0; Type = 'DWord'; Description = 'Always show icons, never thumbnails: OFF' }
-  @{ Path = $advancedKey; Name = 'ShowTypeOverlay'; Preferred = 1; Default = 1; Type = 'DWord'; Description = 'Display file icon on thumbnails: ON' }
-  @{ Path = $cabinetStateKey; Name = 'FullPath'; Preferred = 1; Default = 0; Type = 'DWord'; Description = 'Display the full path in the title bar: ON' }
-  @{ Path = $advancedKey; Name = 'Hidden'; Preferred = 1; Default = 2; Type = 'DWord'; Description = 'Show hidden files, folders, and drives' }
-  @{ Path = $advancedKey; Name = 'HideDrivesWithNoMedia'; Preferred = 0; Default = 1; Type = 'DWord'; Description = 'Hide empty drives: OFF' }
-  @{ Path = $advancedKey; Name = 'HideFileExt'; Preferred = 0; Default = 1; Type = 'DWord'; Description = 'Hide extensions for known file types: OFF' }
-  @{ Path = $advancedKey; Name = 'ShowSuperHidden'; Preferred = 0; Default = 0; Type = 'DWord'; Description = 'Hide protected operating system files: ON' }
-  @{ Path = $advancedKey; Name = 'ShowCompColor'; Preferred = 0; Default = 0; Type = 'DWord'; Description = 'Show encrypted or compressed NTFS files in color: OFF' }
-  @{ Path = $advancedKey; Name = 'ShowInfoTip'; Preferred = 1; Default = 1; Type = 'DWord'; Description = 'Show pop-up description for folder and desktop items: ON' }
-  @{ Path = $advancedKey; Name = 'ShowStatusBar'; Preferred = 1; Default = 1; Type = 'DWord'; Description = 'Show status bar: ON' }
-  @{ Path = $advancedKey; Name = 'AutoCheckSelect'; Preferred = 0; Default = 0; Type = 'DWord'; Description = 'Use check boxes to select items: OFF' }
-  @{ Path = $advancedKey; Name = 'UseCompactMode'; Preferred = 0; Default = 0; Type = 'DWord'; Description = 'Decrease space between items (compact view): OFF' }
-  @{ Path = $advancedKey; Name = 'FolderContentsInfoTip'; Preferred = 1; Default = 1; Type = 'DWord'; Description = 'Display file size information in folder tips: ON' }
-  @{ Path = $advancedKey; Name = 'HideMergeConflicts'; Preferred = 1; Default = 1; Type = 'DWord'; Description = 'Hide folder merge conflicts: ON' }
-  @{ Path = $advancedKey; Name = 'ShowSyncProviderNotifications'; Preferred = 1; Default = 1; Type = 'DWord'; Description = 'Show sync provider notifications: ON' }
-  @{ Path = $advancedKey; Name = 'ShowPreviewHandlers'; Preferred = 1; Default = 1; Type = 'DWord'; Description = 'Show preview handlers in preview pane: ON' }
-  @{ Path = $advancedKey; Name = 'SharingWizardOn'; Preferred = 1; Default = 1; Type = 'DWord'; Description = 'Use Sharing Wizard: ON' }
-  @{ Path = $advancedKey; Name = 'PersistBrowsers'; Preferred = 0; Default = 0; Type = 'DWord'; Description = 'Restore previous folder windows at logon: OFF' }
-  @{ Path = $advancedKey; Name = 'TypeAhead'; Preferred = 1; Default = 1; Type = 'DWord'; Description = 'When typing into list view: Select the typed item' }
+  # -- View tab --
+  @{
+    Path = $advancedKey
+    Name = 'IconsOnly'
+    Preferred = 0
+    Default = 0
+    Type = 'DWord'
+    Description = 'Always show icons, never thumbnails: OFF'
+  }
+  @{
+    Path = $advancedKey
+    Name = 'ShowTypeOverlay'
+    Preferred = 1
+    Default = 1
+    Type = 'DWord'
+    Description = 'Display file icon on thumbnails: ON'
+  }
+  @{
+    Path = $cabinetStateKey
+    Name = 'FullPath'
+    Preferred = 1
+    Default = 0
+    Type = 'DWord'
+    Description = 'Display the full path in the title bar: ON'
+  }
+  @{
+    Path = $advancedKey
+    Name = 'Hidden'
+    Preferred = 1
+    Default = 2
+    Type = 'DWord'
+    Description = 'Show hidden files, folders, and drives'
+  }
+  @{
+    Path = $advancedKey
+    Name = 'HideDrivesWithNoMedia'
+    Preferred = 0
+    Default = 1
+    Type = 'DWord'
+    Description = 'Hide empty drives: OFF'
+  }
+  @{
+    Path = $advancedKey
+    Name = 'HideFileExt'
+    Preferred = 0
+    Default = 1
+    Type = 'DWord'
+    Description = 'Hide extensions for known file types: OFF'
+  }
+  @{
+    Path = $advancedKey
+    Name = 'ShowSuperHidden'
+    Preferred = 0
+    Default = 0
+    Type = 'DWord'
+    Description = 'Hide protected operating system files: ON'
+  }
+  @{
+    Path = $advancedKey
+    Name = 'ShowCompColor'
+    Preferred = 0
+    Default = 0
+    Type = 'DWord'
+    Description = 'Show encrypted or compressed NTFS files in color: OFF'
+  }
+  @{
+    Path = $advancedKey
+    Name = 'ShowInfoTip'
+    Preferred = 1
+    Default = 1
+    Type = 'DWord'
+    Description = 'Show pop-up description for folder and desktop items: ON'
+  }
+  @{
+    Path = $advancedKey
+    Name = 'ShowStatusBar'
+    Preferred = 1
+    Default = 1
+    Type = 'DWord'
+    Description = 'Show status bar: ON'
+  }
+  @{
+    Path = $advancedKey
+    Name = 'AutoCheckSelect'
+    Preferred = 0
+    Default = 0
+    Type = 'DWord'
+    Description = 'Use check boxes to select items: OFF'
+  }
+  @{
+    Path = $advancedKey
+    Name = 'UseCompactMode'
+    Preferred = 0
+    Default = 0
+    Type = 'DWord'
+    Description = 'Decrease space between items (compact view): OFF'
+  }
+  @{
+    Path = $advancedKey
+    Name = 'FolderContentsInfoTip'
+    Preferred = 1
+    Default = 1
+    Type = 'DWord'
+    Description = 'Display file size information in folder tips: ON'
+  }
+  @{
+    Path = $advancedKey
+    Name = 'HideMergeConflicts'
+    Preferred = 1
+    Default = 1
+    Type = 'DWord'
+    Description = 'Hide folder merge conflicts: ON'
+  }
+  @{
+    Path = $advancedKey
+    Name = 'ShowSyncProviderNotifications'
+    Preferred = 1
+    Default = 1
+    Type = 'DWord'
+    Description = 'Show sync provider notifications: ON'
+  }
+  @{
+    Path = $advancedKey
+    Name = 'ShowPreviewHandlers'
+    Preferred = 1
+    Default = 1
+    Type = 'DWord'
+    Description = 'Show preview handlers in preview pane: ON'
+  }
+  @{
+    Path = $advancedKey
+    Name = 'SharingWizardOn'
+    Preferred = 1
+    Default = 1
+    Type = 'DWord'
+    Description = 'Use Sharing Wizard: ON'
+  }
+  @{
+    Path = $advancedKey
+    Name = 'PersistBrowsers'
+    Preferred = 0
+    Default = 0
+    Type = 'DWord'
+    Description = 'Restore previous folder windows at logon: OFF'
+  }
+  @{
+    Path = $advancedKey
+    Name = 'TypeAhead'
+    Preferred = 1
+    Default = 1
+    Type = 'DWord'
+    Description = 'When typing into list view: Select the typed item'
+  }
 
-  # ── Navigation pane ──
-  @{ Path = $advancedKey; Name = 'NavPaneExpandToCurrentFolder'; Preferred = 0; Default = 0; Type = 'DWord'; Description = 'Expand to open folder: OFF' }
-  @{ Path = $advancedKey; Name = 'NavPaneShowAllFolders'; Preferred = 0; Default = 0; Type = 'DWord'; Description = 'Show all folders: OFF' }
+  # -- Navigation pane --
+  @{
+    Path = $advancedKey
+    Name = 'NavPaneExpandToCurrentFolder'
+    Preferred = 0
+    Default = 0
+    Type = 'DWord'
+    Description = 'Expand to open folder: OFF'
+  }
+  @{
+    Path = $advancedKey
+    Name = 'NavPaneShowAllFolders'
+    Preferred = 0
+    Default = 0
+    Type = 'DWord'
+    Description = 'Show all folders: OFF'
+  }
+  @{
+    Path = $explorerKey
+    Name = 'ShowDriveLettersFirst'
+    Preferred = 4
+    Default = 0
+    Type = 'DWord'
+    Description = 'Show drive letters before drive labels'
+  }
+  @{
+    Path = $galleryUserKey
+    Name = 'System.IsPinnedToNameSpaceTree'
+    Preferred = 0
+    Default = $null
+    Type = 'DWord'
+    MinBuild = 22000
+    Description = 'Hide Gallery from the navigation pane'
+  }
+  @{
+    Path = $navPaneGalleryKey
+    Name = 'CheckedValue'
+    Preferred = 1
+    Default = $null
+    Type = 'DWord'
+    MinBuild = 22000
+    Description = 'Gallery nav pane option metadata: checked value'
+  }
+  @{
+    Path = $navPaneGalleryKey
+    Name = 'DefaultValue'
+    Preferred = 0
+    Default = $null
+    Type = 'DWord'
+    MinBuild = 22000
+    Description = 'Gallery nav pane option metadata: default value'
+  }
+  @{
+    Path = $navPaneGalleryKey
+    Name = 'HKeyRoot'
+    Preferred = 2147483649
+    Default = $null
+    Type = 'DWord'
+    MinBuild = 22000
+    Description = 'Gallery nav pane option metadata: HKCU root'
+  }
+  @{
+    Path = $navPaneGalleryKey
+    Name = 'Id'
+    Preferred = 13
+    Default = $null
+    Type = 'DWord'
+    MinBuild = 22000
+    Description = 'Gallery nav pane option metadata: id'
+  }
+  @{
+    Path = $navPaneGalleryKey
+    Name = 'RegPath'
+    Preferred = 'Software\\Classes\\CLSID\\{e88865ea-0e1c-4e20-9aa6-edcd0212c87c}'
+    Default = $null
+    Type = 'String'
+    MinBuild = 22000
+    Description = 'Gallery nav pane option metadata: registry path'
+  }
+  @{
+    Path = $navPaneGalleryKey
+    Name = 'Text'
+    Preferred = 'Show Gallery'
+    Default = $null
+    Type = 'String'
+    MinBuild = 22000
+    Description = 'Gallery nav pane option metadata: display text'
+  }
+  @{
+    Path = $navPaneGalleryKey
+    Name = 'Type'
+    Preferred = 'checkbox'
+    Default = $null
+    Type = 'String'
+    MinBuild = 22000
+    Description = 'Gallery nav pane option metadata: option type'
+  }
+  @{
+    Path = $navPaneGalleryKey
+    Name = 'UncheckedValue'
+    Preferred = 0
+    Default = $null
+    Type = 'DWord'
+    MinBuild = 22000
+    Description = 'Gallery nav pane option metadata: unchecked value'
+  }
+  @{
+    Path = $navPaneGalleryKey
+    Name = 'ValueName'
+    Preferred = 'System.IsPinnedToNameSpaceTree'
+    Default = $null
+    Type = 'String'
+    MinBuild = 22000
+    Description = 'Gallery nav pane option metadata: value name'
+  }
+  @{
+    Path = $homeUserKey
+    Name = ''
+    Preferred = 'CLSID_MSGraphHomeFolder'
+    Default = $null
+    Type = 'String'
+    MinBuild = 22000
+    Description = 'Home navigation CLSID label'
+  }
+  @{
+    Path = $homeUserKey
+    Name = 'System.IsPinnedToNameSpaceTree'
+    Preferred = 0
+    Default = $null
+    Type = 'DWord'
+    MinBuild = 22000
+    Description = 'Hide Home from the navigation pane'
+  }
+  @{
+    Path = $navPaneHomeKey
+    Name = 'CheckedValue'
+    Preferred = 1
+    Default = $null
+    Type = 'DWord'
+    MinBuild = 22000
+    Description = 'Home nav pane option metadata: checked value'
+  }
+  @{
+    Path = $navPaneHomeKey
+    Name = 'DefaultValue'
+    Preferred = 0
+    Default = $null
+    Type = 'DWord'
+    MinBuild = 22000
+    Description = 'Home nav pane option metadata: default value'
+  }
+  @{
+    Path = $navPaneHomeKey
+    Name = 'HKeyRoot'
+    Preferred = 2147483649
+    Default = $null
+    Type = 'DWord'
+    MinBuild = 22000
+    Description = 'Home nav pane option metadata: HKCU root'
+  }
+  @{
+    Path = $navPaneHomeKey
+    Name = 'Id'
+    Preferred = 13
+    Default = $null
+    Type = 'DWord'
+    MinBuild = 22000
+    Description = 'Home nav pane option metadata: id'
+  }
+  @{
+    Path = $navPaneHomeKey
+    Name = 'RegPath'
+    Preferred = 'Software\\Classes\\CLSID\\{f874310e-b6b7-47dc-bc84-b9e6b38f5903}'
+    Default = $null
+    Type = 'String'
+    MinBuild = 22000
+    Description = 'Home nav pane option metadata: registry path'
+  }
+  @{
+    Path = $navPaneHomeKey
+    Name = 'Text'
+    Preferred = 'Show Home'
+    Default = $null
+    Type = 'String'
+    MinBuild = 22000
+    Description = 'Home nav pane option metadata: display text'
+  }
+  @{
+    Path = $navPaneHomeKey
+    Name = 'Type'
+    Preferred = 'checkbox'
+    Default = $null
+    Type = 'String'
+    MinBuild = 22000
+    Description = 'Home nav pane option metadata: option type'
+  }
+  @{
+    Path = $navPaneHomeKey
+    Name = 'UncheckedValue'
+    Preferred = 0
+    Default = $null
+    Type = 'DWord'
+    MinBuild = 22000
+    Description = 'Home nav pane option metadata: unchecked value'
+  }
+  @{
+    Path = $navPaneHomeKey
+    Name = 'ValueName'
+    Preferred = 'System.IsPinnedToNameSpaceTree'
+    Default = $null
+    Type = 'String'
+    MinBuild = 22000
+    Description = 'Home nav pane option metadata: value name'
+  }
+  @{
+    Path = $oneDriveUserKey
+    Name = 'System.IsPinnedToNameSpaceTree'
+    Preferred = 0
+    Default = $null
+    Type = 'DWord'
+    Description = 'Hide OneDrive from the navigation pane'
+  }
+  @{
+    Path = $navPaneOneDriveKey
+    Name = 'CheckedValue'
+    Preferred = 1
+    Default = $null
+    Type = 'DWord'
+    Description = 'OneDrive nav pane option metadata: checked value'
+  }
+  @{
+    Path = $navPaneOneDriveKey
+    Name = 'DefaultValue'
+    Preferred = 0
+    Default = $null
+    Type = 'DWord'
+    Description = 'OneDrive nav pane option metadata: default value'
+  }
+  @{
+    Path = $navPaneOneDriveKey
+    Name = 'HKeyRoot'
+    Preferred = 2147483649
+    Default = $null
+    Type = 'DWord'
+    Description = 'OneDrive nav pane option metadata: HKCU root'
+  }
+  @{
+    Path = $navPaneOneDriveKey
+    Name = 'Id'
+    Preferred = 13
+    Default = $null
+    Type = 'DWord'
+    Description = 'OneDrive nav pane option metadata: id'
+  }
+  @{
+    Path = $navPaneOneDriveKey
+    Name = 'RegPath'
+    Preferred = 'Software\\Classes\\CLSID\\{018D5C66-4533-4307-9B53-224DE2ED1FE6}'
+    Default = $null
+    Type = 'String'
+    Description = 'OneDrive nav pane option metadata: registry path'
+  }
+  @{
+    Path = $navPaneOneDriveKey
+    Name = 'Text'
+    Preferred = 'Show OneDrive'
+    Default = $null
+    Type = 'String'
+    Description = 'OneDrive nav pane option metadata: display text'
+  }
+  @{
+    Path = $navPaneOneDriveKey
+    Name = 'Type'
+    Preferred = 'checkbox'
+    Default = $null
+    Type = 'String'
+    Description = 'OneDrive nav pane option metadata: option type'
+  }
+  @{
+    Path = $navPaneOneDriveKey
+    Name = 'UncheckedValue'
+    Preferred = 0
+    Default = $null
+    Type = 'DWord'
+    Description = 'OneDrive nav pane option metadata: unchecked value'
+  }
+  @{
+    Path = $navPaneOneDriveKey
+    Name = 'ValueName'
+    Preferred = 'System.IsPinnedToNameSpaceTree'
+    Default = $null
+    Type = 'String'
+    Description = 'OneDrive nav pane option metadata: value name'
+  }
 
-  # ── Search tab ──
-  @{ Path = $searchPrefKey; Name = 'WholeFileSystem'; Preferred = 0; Default = 0; Type = 'DWord'; Description = "Don't use index when searching system files: OFF" }
-  @{ Path = $searchPrefKey; Name = 'SystemFolders'; Preferred = 1; Default = 1; Type = 'DWord'; Description = 'Include system directories in non-indexed searches: ON' }
-  @{ Path = $searchPrefKey; Name = 'ArchivedFiles'; Preferred = 0; Default = 0; Type = 'DWord'; Description = 'Include compressed files (ZIP, CAB): OFF' }
-  @{ Path = $advancedKey; Name = 'Start_SearchFiles'; Preferred = 2; Default = 2; Type = 'DWord'; Description = 'Always search file names and contents: OFF' }
+  # -- Search tab --
+  @{
+    Path = $searchPrefKey
+    Name = 'WholeFileSystem'
+    Preferred = 0
+    Default = 0
+    Type = 'DWord'
+    Description = "Don't use index when searching system files: OFF"
+  }
+  @{
+    Path = $searchPrefKey
+    Name = 'SystemFolders'
+    Preferred = 1
+    Default = 1
+    Type = 'DWord'
+    Description = 'Include system directories in non-indexed searches: ON'
+  }
+  @{
+    Path = $searchPrefKey
+    Name = 'ArchivedFiles'
+    Preferred = 0
+    Default = 0
+    Type = 'DWord'
+    Description = 'Include compressed files (ZIP, CAB): OFF'
+  }
+  @{
+    Path = $advancedKey
+    Name = 'Start_SearchFiles'
+    Preferred = 2
+    Default = 2
+    Type = 'DWord'
+    Description = 'Always search file names and contents: OFF'
+  }
 )
 
-# ── Export config (print to console or write to disk and exit) ──────────
+# -- Export config (print to console or write to disk and exit) ----------
 if ($ExportConfig) {
   if ($DryRun) {
     Write-Log -Message '-DryRun cannot be combined with -ExportConfig.' -Color Red
@@ -253,7 +743,7 @@ if ($ExportConfig) {
   exit 0
 }
 
-# ── Merge user config (override built-in defaults with JSON values) ──────
+# -- Merge user config (override built-in defaults with JSON values) ------
 if ($PSBoundParameters.ContainsKey('Config')) {
   if ([string]::IsNullOrWhiteSpace($Config)) {
     Write-Log -Message '-Config requires a path to a JSON file.' -Color Red
@@ -287,7 +777,7 @@ if ($PSBoundParameters.ContainsKey('Config')) {
   Write-Log -Message "  -> $($_overrides.Count) override(s) processed`n" -Color Gray
 }
 
-# ── SysPrep: mount the default user hive ─────────────────────────────
+# -- SysPrep: mount the default user hive -----------------------------
 if ($SysPrep) {
   $_whatIfBackup = $WhatIfPreference
   $WhatIfPreference = $false  # mount is infrastructure, not a config change
@@ -299,20 +789,34 @@ if ($SysPrep) {
   }
 }
 
+$_eligibleSettings = @($explorerSettings | Where-Object {
+    (-not $_.ContainsKey('MinBuild') -or $currentBuild -ge $_.MinBuild) -and
+    (-not $_.ContainsKey('MaxBuild') -or $currentBuild -le $_.MaxBuild)
+  })
+
+$_skippedSettings = @($explorerSettings | Where-Object {
+    ($_.ContainsKey('MinBuild') -and $currentBuild -lt $_.MinBuild) -or
+    ($_.ContainsKey('MaxBuild') -and $currentBuild -gt $_.MaxBuild)
+  })
+
+foreach ($_entry in $_skippedSettings) {
+  Write-Log -Message "Skipping Explorer setting '$($_entry.Name)' on build $currentBuild - $($_entry.Description)" -Color Yellow
+}
+
 $targetLabel = if ($Undo) { 'Restoring' } else { 'Applying' }
 $anyChanges = $false
 
 # Apply registry values
-foreach ($entry in $explorerSettings) {
+foreach ($entry in $_eligibleSettings) {
   $targetValue = if ($Undo) { $entry.Default } else { $entry.Preferred }
 
   if ($Undo -and $null -eq $entry.Default) {
-    # Default is absence of the value — remove it
-    Write-Log -Message "$targetLabel Explorer setting: Remove '$($entry.Name)' — $($entry.Description)" -Color Yellow
+    # Default is absence of the value - remove it
+    Write-Log -Message "$targetLabel Explorer setting: Remove '$($entry.Name)' - $($entry.Description)" -Color Yellow
     $result = Remove-RegistryValue -Path $entry.Path -Name $entry.Name
   }
   else {
-    Write-Log -Message "$targetLabel Explorer setting: $($entry.Name) = '$targetValue' — $($entry.Description)" -Color Yellow
+    Write-Log -Message "$targetLabel Explorer setting: $($entry.Name) = '$targetValue' - $($entry.Description)" -Color Yellow
     $result = Set-RegistryValue -Path $entry.Path -Name $entry.Name -Value $targetValue -Type $entry.Type
   }
 
@@ -323,11 +827,11 @@ foreach ($entry in $explorerSettings) {
     }
   }
   else {
-    Write-Log -Message "  -> FAILED — could not process '$($entry.Name)'" -Color Red
+    Write-Log -Message "  -> FAILED - could not process '$($entry.Name)'" -Color Red
   }
 }
 
-# ── SysPrep: dismount the default user hive ──────────────────────────
+# -- SysPrep: dismount the default user hive --------------------------
 if ($SysPrep) {
   $_whatIfBackup = $WhatIfPreference
   $WhatIfPreference = $false
@@ -335,12 +839,12 @@ if ($SysPrep) {
   $WhatIfPreference = $_whatIfBackup
 }
 
-# Instant apply — restart Explorer
+# Instant apply - restart Explorer
 if ($Instant -and -not $DryRun) {
-  Write-Log -Message "`nRestarting Windows Explorer …" -Color Yellow
+  Write-Log -Message "`nRestarting Windows Explorer ..." -Color Yellow
   Stop-Process -Name explorer -Force
   Start-Process explorer
-  Write-Log -Message '  -> Done — Explorer restarted.' -Color Green
+  Write-Log -Message '  -> Done - Explorer restarted.' -Color Green
 }
 elseif ($Instant -and $DryRun) {
   Write-Log -Message "`n[DRY RUN] Would restart Windows Explorer." -Color Yellow
@@ -348,7 +852,7 @@ elseif ($Instant -and $DryRun) {
 
 # Summary
 if ($DryRun) {
-  Write-Log -Message "`nDRY RUN COMPLETE — no changes were made" -Color Yellow
+  Write-Log -Message "`nDRY RUN COMPLETE - no changes were made" -Color Yellow
 }
 elseif ($anyChanges) {
   if ($Undo) {
@@ -358,12 +862,12 @@ elseif ($anyChanges) {
     Write-Log -Message "`nExplorer settings have been applied." -Color Green
   }
   if ($SysPrep) {
-    Write-Log -Message 'Settings were written to the default user profile hive — new user profiles will inherit them.' -Color Yellow
+    Write-Log -Message 'Settings were written to the default user profile hive - new user profiles will inherit them.' -Color Yellow
   }
   elseif (-not $Instant) {
     Write-Log -Message 'Use -Instant or restart Explorer for changes to take effect.' -Color Yellow
   }
 }
 else {
-  Write-Log -Message "`nAll registry values were already at the desired target — nothing to do." -Color Green
+  Write-Log -Message "`nAll registry values were already at the desired target - nothing to do." -Color Green
 }

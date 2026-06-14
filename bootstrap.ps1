@@ -1,4 +1,4 @@
-﻿<#
+<#
   Initial bootstrapping script used to download PowerShell module dependencies
   defined in the project manifest and set up the project for local use.
 #>
@@ -28,8 +28,8 @@ foreach ($mod in $manifest.RequiredModules) {
   Write-Output "Ensuring module '$name' is installed.." -ForegroundColor Yellow
 
   $installed = Get-Module -ListAvailable -Name $name |
-  Sort-Object Version -Descending |
-  Select-Object -First 1
+    Sort-Object Version -Descending |
+    Select-Object -First 1
 
   if ($installed -and (!$version -or $installed.Version -ge [version]$version)) {
     Write-Output "    -> OK (found $($installed.Version))"
@@ -37,9 +37,9 @@ foreach ($mod in $manifest.RequiredModules) {
   }
 
   $params = @{
-    Name         = $name
-    Scope        = 'CurrentUser'
-    Force        = $true
+    Name = $name
+    Scope = 'CurrentUser'
+    Force = $true
     AllowClobber = $true
   }
 

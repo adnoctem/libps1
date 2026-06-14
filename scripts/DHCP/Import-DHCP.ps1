@@ -1,4 +1,4 @@
-﻿#Requires -Version 2.0
+#Requires -Version 2.0
 #Requires -Module ActiveDirectory
 
 <#
@@ -45,7 +45,7 @@ param (
 )
 
 if (-not (Test-Path -Path $InputPath -PathType Leaf)) {
-  Throw("InputPath is not a valid file. Please provide a valid XML file path.")
+  throw("InputPath is not a valid file. Please provide a valid XML file path.")
 }
 
 Import-DhcpServer -ComputerName $ComputerName -File $InputPath -Force

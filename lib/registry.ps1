@@ -1,16 +1,16 @@
-﻿# Map of short and long hive names to canonical PowerShell drive-qualified paths.
+# Map of short and long hive names to canonical PowerShell drive-qualified paths.
 # Values are the PS drive root (e.g. 'HKLM:'), not .NET enums, so they plug
 # directly into provider cmdlets (Get-Item, Set-ItemProperty, etc.).
 $script:HiveMap = @{
-  'HKLM'                = 'HKLM:'
-  'HKCU'                = 'HKCU:'
-  'HKCR'                = 'HKCR:'
-  'HKU'                 = 'HKU:'
-  'HKCC'                = 'HKCC:'
-  'HKEY_LOCAL_MACHINE'  = 'HKLM:'
-  'HKEY_CURRENT_USER'   = 'HKCU:'
-  'HKEY_CLASSES_ROOT'   = 'HKCR:'
-  'HKEY_USERS'          = 'HKU:'
+  'HKLM' = 'HKLM:'
+  'HKCU' = 'HKCU:'
+  'HKCR' = 'HKCR:'
+  'HKU' = 'HKU:'
+  'HKCC' = 'HKCC:'
+  'HKEY_LOCAL_MACHINE' = 'HKLM:'
+  'HKEY_CURRENT_USER' = 'HKCU:'
+  'HKEY_CLASSES_ROOT' = 'HKCR:'
+  'HKEY_USERS' = 'HKU:'
   'HKEY_CURRENT_CONFIG' = 'HKCC:'
 }
 
@@ -20,9 +20,9 @@ function ConvertTo-RegistryProviderPath {
     .SYNOPSIS
       Converts a registry path to PS drive format suitable for provider cmdlets.
     .DESCRIPTION
-      Accepts short hive notation (HKLM\…), PS drive notation (HKLM:\…),
-      Registry:: prefix (Registry::HKEY_LOCAL_MACHINE\…), or long .NET names
-      (HKEY_LOCAL_MACHINE\…).  Always returns a path like 'HKLM:\Software\…'.
+      Accepts short hive notation (HKLM\...), PS drive notation (HKLM:\...),
+      Registry:: prefix (Registry::HKEY_LOCAL_MACHINE\...), or long .NET names
+      (HKEY_LOCAL_MACHINE\...).  Always returns a path like 'HKLM:\Software\...'.
       Trailing slashes are stripped.
     .EXAMPLE
       PS> ConvertTo-RegistryProviderPath 'HKLM\Software\MyApp'
@@ -53,8 +53,15 @@ function ConvertTo-RegistryProviderPath {
   $_matched = $false
   foreach ($_candidate in $script:HiveMap.Keys) {
     # Match exact hive name at start, optionally followed by : or \
-    if ($_normalized -match "^\Q$($_candidate)\E(?::|\\|$)") {
-      $_normalized = $_normalized -replace "^\Q$($_candidate)\E\\?", "$($script:HiveMap[$_candidate])\"
+    $_candidatePattern = [regex]::Escape($_candidate)
+    if ($_normalized -match "^$($_candidatePattern)(?::|\\|$)") {
+      $_remainder = $_normalized.Substring($_candidate.Length).TrimStart(':', '\')
+      $_normalized = if ([string]::IsNullOrEmpty($_remainder)) {
+        $script:HiveMap[$_candidate]
+      }
+      else {
+        "$($script:HiveMap[$_candidate])\$_remainder"
+      }
       $_matched = $true
       break
     }
@@ -107,13 +114,13 @@ function Resolve-RegistryPath {
     $Writable = $false
   )
 
-  # Short hive name → .NET RegistryHive (kept here for this function only;
+  # Short hive name -> .NET RegistryHive (kept here for this function only;
   # higher-level functions rely on the provider cmdlets instead.)
   $_hiveEnum = @{
     'HKLM' = [Microsoft.Win32.RegistryHive]::LocalMachine
     'HKCU' = [Microsoft.Win32.RegistryHive]::CurrentUser
     'HKCR' = [Microsoft.Win32.RegistryHive]::ClassesRoot
-    'HKU'  = [Microsoft.Win32.RegistryHive]::Users
+    'HKU' = [Microsoft.Win32.RegistryHive]::Users
     'HKCC' = [Microsoft.Win32.RegistryHive]::CurrentConfig
   }
 
@@ -192,18 +199,18 @@ function Get-RegistryKey {
   try {
     # Enumerate subkeys via the PS drive provider
     $_subKeys = @(Get-ChildItem -Path $_providerPath -ErrorAction Stop |
-      ForEach-Object { $_.PSChildName })
+        ForEach-Object { $_.PSChildName })
 
     # Enumerate value names; '(default)' is normalised to '' to match .NET behaviour
     $_itemProps = Get-ItemProperty -Path $_providerPath -ErrorAction Stop
     $_values = @($_itemProps.PSObject.Properties |
-      Where-Object { $_.Name -notin @('PSPath', 'PSParentPath', 'PSChildName', 'PSDrive', 'PSProvider') } |
-      ForEach-Object { if ($_.Name -eq '(default)') { '' } else { $_.Name } })
+        Where-Object { $_.Name -notin @('PSPath', 'PSParentPath', 'PSChildName', 'PSDrive', 'PSProvider') } |
+        ForEach-Object { if ($_.Name -eq '(default)') { '' } else { $_.Name } })
 
     [PSCustomObject]@{
-      Path    = $Path
+      Path = $Path
       SubKeys = $_subKeys
-      Values  = $_values
+      Values = $_values
     }
   }
   catch [System.UnauthorizedAccessException] {
@@ -255,7 +262,7 @@ function Set-RegistryKey {
   if (Test-Path -Path $_providerPath) {
     Write-Verbose "Registry key already exists: '$Path'"
     return [PSCustomObject]@{
-      Path   = $Path
+      Path = $Path
       Status = 'AlreadyExists'
     }
   }
@@ -266,7 +273,7 @@ function Set-RegistryKey {
       $null = New-Item -Path $_providerPath -Force -ErrorAction Stop
       Write-Verbose "Created registry key: '$Path'"
       return [PSCustomObject]@{
-        Path   = $Path
+        Path = $Path
         Status = 'Created'
       }
     }
@@ -328,7 +335,7 @@ function Remove-RegistryKey {
   if (-not (Test-Path -Path $_providerPath)) {
     Write-Verbose "Registry key does not exist (nothing to remove): '$Path'"
     return [PSCustomObject]@{
-      Path   = $Path
+      Path = $Path
       Status = 'NotFound'
     }
   }
@@ -339,7 +346,7 @@ function Remove-RegistryKey {
       $null = Remove-Item -Path $_providerPath -Recurse:$Recurse -Force -ErrorAction Stop
       Write-Verbose "Removed registry key: '$Path'"
       return [PSCustomObject]@{
-        Path   = $Path
+        Path = $Path
         Status = 'Removed'
       }
     }
@@ -549,7 +556,7 @@ function Set-RegistryValue {
         $_currentInferred -eq [Microsoft.Win32.RegistryValueKind]::ExpandString -or
         $_currentInferred -eq [Microsoft.Win32.RegistryValueKind]::String -and
         $Type -eq [Microsoft.Win32.RegistryValueKind]::String)) {
-        # Ambiguous case – fall back to a precise .NET read for the actual kind
+        # Ambiguous case - fall back to a precise .NET read for the actual kind
         $_key = Resolve-RegistryPath -Path $Path
         if ($_key) {
           try { $_isSameKind = ($_key.GetValueKind($Name) -eq $Type) }
@@ -561,8 +568,8 @@ function Set-RegistryValue {
       if ($_isSameValue -and $_isSameKind) {
         Write-Verbose "Registry value '$Name' already set to the requested data in '$Path'"
         return [PSCustomObject]@{
-          Path   = $Path
-          Name   = $Name
+          Path = $Path
+          Name = $Name
           Status = 'Unchanged'
         }
       }
@@ -572,8 +579,8 @@ function Set-RegistryValue {
         $null = Set-ItemProperty -Path $_providerPath -Name $_resolvedName -Value $Value -Type $Type -ErrorAction Stop
         Write-Verbose "Updated registry value '$Name' in '$Path'"
         return [PSCustomObject]@{
-          Path   = $Path
-          Name   = $Name
+          Path = $Path
+          Name = $Name
           Status = 'Updated'
         }
       }
@@ -584,8 +591,8 @@ function Set-RegistryValue {
         $null = Set-ItemProperty -Path $_providerPath -Name $_resolvedName -Value $Value -Type $Type -ErrorAction Stop
         Write-Verbose "Created registry value '$Name' in '$Path'"
         return [PSCustomObject]@{
-          Path   = $Path
-          Name   = $Name
+          Path = $Path
+          Name = $Name
           Status = 'Created'
         }
       }
@@ -639,8 +646,8 @@ function Remove-RegistryValue {
   if (-not (Test-Path -Path $_providerPath)) {
     Write-Verbose "Registry key not found (nothing to remove): '$Path'"
     return [PSCustomObject]@{
-      Path   = $Path
-      Name   = $Name
+      Path = $Path
+      Name = $Name
       Status = 'KeyNotFound'
     }
   }
@@ -654,8 +661,8 @@ function Remove-RegistryValue {
     if ($_props.PSObject.Properties.Name -notcontains $_resolvedName) {
       Write-Verbose "Registry value '$Name' does not exist in '$Path' (nothing to remove)"
       return [PSCustomObject]@{
-        Path   = $Path
-        Name   = $Name
+        Path = $Path
+        Name = $Name
         Status = 'NotFound'
       }
     }
@@ -664,8 +671,8 @@ function Remove-RegistryValue {
       $null = Remove-ItemProperty -Path $_providerPath -Name $_resolvedName -ErrorAction Stop
       Write-Verbose "Removed registry value '$Name' from '$Path'"
       return [PSCustomObject]@{
-        Path   = $Path
-        Name   = $Name
+        Path = $Path
+        Name = $Name
         Status = 'Removed'
       }
     }
@@ -686,7 +693,7 @@ function Test-RegistryPath {
       Returns $true if the registry path exists, $false otherwise.
     .DESCRIPTION
       A safe, non-terminating existence check for registry keys.  Unlike
-      Resolve-RegistryPath, this function never emits errors — it simply
+      Resolve-RegistryPath, this function never emits errors - it simply
       returns a boolean.  Suitable for use in conditionals and idempotency
       guards.
     .EXAMPLE
@@ -830,7 +837,7 @@ function Mount-DefaultUserHive {
       Mounts the default user profile hive so it can be modified before
       sealing an image (Sysprep / Audit Mode).  Changes written here propagate
       to every new user account created on the deployed system.
-      HKEY_USERS\.DEFAULT is the LocalSystem profile — do NOT write there for
+      HKEY_USERS\.DEFAULT is the LocalSystem profile - do NOT write there for
       this purpose.  Use Dismount-DefaultUserHive to unload when done.
       Requires elevation.
     .PARAMETER MountName
@@ -861,7 +868,7 @@ function Mount-DefaultUserHive {
     return $null
   }
 
-  # Refuse if already mounted — silent re-use risks writing to the wrong hive
+  # Refuse if already mounted - silent re-use risks writing to the wrong hive
   $mountPath = "Registry::HKEY_USERS\$MountName"
   if (Test-Path -LiteralPath $mountPath) {
     Write-Log -Message "A hive is already mounted at HKEY_USERS\$MountName. Dismount it first or choose a different MountName." -Color Red
@@ -881,7 +888,7 @@ function Mount-DefaultUserHive {
   Write-Log -Message "Mounted default user hive: HKEY_USERS\$MountName" -Color Green
   return $mountPath
 }
- 
+
 function Dismount-DefaultUserHive {
   <#
     .SYNOPSIS
@@ -889,7 +896,7 @@ function Dismount-DefaultUserHive {
     .DESCRIPTION
       Calls reg.exe unload.  If lingering handles cause the first attempt to
       fail, forces a garbage collection and retries once.  A failed dismount
-      leaves the default profile corrupted — investigate before sealing the
+      leaves the default profile corrupted - investigate before sealing the
       image.
     .PARAMETER MountName
       Subkey name under HKEY_USERS to unload. Must match Mount-DefaultUserHive.
@@ -917,7 +924,7 @@ function Dismount-DefaultUserHive {
     return
   }
 
-  # Retry after forcing GC — PowerShell's registry provider may still hold handles
+  # Retry after forcing GC - PowerShell's registry provider may still hold handles
   Write-Log -Message "First unload attempt failed: $output. Forcing GC and retrying." -Color Yellow
   [System.GC]::Collect()
   [System.GC]::WaitForPendingFinalizers()

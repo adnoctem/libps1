@@ -1,4 +1,4 @@
-﻿<#
+<#
 .SYNOPSIS
   TBA..
 .DESCRIPTION
@@ -52,8 +52,8 @@ Get-DefaultGateway
 Get-DefaultGateway -AddressFamily IPv6
 
 # DNS servers
-Get-DNSServer
-Get-DNSServer -AddressFamily IPv6
+Get-DnsServer
+Get-DnsServer -AddressFamily IPv6
 
 # MAC
 Get-MACAddress

@@ -1,0 +1,178 @@
+#Requires -Version 5.0
+
+<#
+.SYNOPSIS
+  Configures Windows Update policy defaults.
+.DESCRIPTION
+  Applies Windows Update, Delivery Optimization, restart, and driver-update
+  policy values using libps1 registry helpers. The default profile keeps
+  automatic updates enabled while reducing peer sharing, unexpected restarts,
+  and driver delivery through quality updates.
+.PARAMETER Undo
+  Restore defaults or remove values managed by this script.
+.PARAMETER DryRun
+  Preview changes without applying them.
+.PARAMETER Config
+  JSON file containing setting overrides. Entries match built-in settings by
+  Name and can override Preferred or Default values.
+.PARAMETER ExportConfig
+  Export the default update settings JSON and exit.
+.PARAMETER ExportPath
+  File path used with -ExportConfig.
+.EXAMPLE
+  PS> ./Configure-Updates.ps1
+  Applies the default Windows Update policy profile.
+.EXAMPLE
+  PS> ./Configure-Updates.ps1 -DryRun
+  Previews update policy values without writing them.
+.EXAMPLE
+  PS> ./Configure-Updates.ps1 -Undo
+  Removes Windows Update values managed by this script.
+.EXAMPLE
+  PS> ./Configure-Updates.ps1 -ExportConfig -ExportPath '.\updates.json'
+  Exports the default update policy template.
+.LINK
+  https://github.com/adnoctem/libps1
+.NOTES
+  Author: Maximilian Gindorfer <info@mvprowess.com>
+  License: MIT
+#>
+
+[CmdletBinding(SupportsShouldProcess = $true)]
+param([switch]$Undo, [switch]$DryRun, [string]$Config, [switch]$ExportConfig, [string]$ExportPath)
+
+# ---- Module import -----------------------------------------------------------
+$root = Split-Path (Split-Path $PSScriptRoot -Parent) -Parent
+$module = Join-Path $root 'lib/libps1.psm1'
+Import-Module $module -Force
+# -----------------------------------------------------------------------------
+
+if ($DryRun) { $WhatIfPreference = $true; Write-Log -Message "DRY RUN - no changes will be applied`n" -Color Yellow }
+
+$updateSettings = @(
+  @{
+    Path = 'HKU:\S-1-5-20\Software\Microsoft\Windows\CurrentVersion\DeliveryOptimization\Settings'
+    Name = 'DownloadMode'
+    Preferred = 0
+    Default = $null
+    Type = 'DWord'
+    Group = 'DeliveryOptimization'
+    Description = 'Disable sharing downloaded updates with other PCs for NETWORK SERVICE.'
+  }
+  @{
+    Path = 'HKLM:\SOFTWARE\Microsoft\WindowsUpdate\UX\Settings'
+    Name = 'IsContinuousInnovationOptedIn'
+    Preferred = 0
+    Default = $null
+    Type = 'DWord'
+    Group = 'InnovationOptIn'
+    Description = 'Disable getting latest updates as soon as available.'
+  }
+  @{
+    Path = 'HKLM:\SOFTWARE\Policies\Microsoft\Windows\WindowsUpdate\AU'
+    Name = 'NoAutoRebootWithLoggedOnUsers'
+    Preferred = 1
+    Default = $null
+    Type = 'DWord'
+    Group = 'RestartBehavior'
+    Description = 'Prevent automatic restarts while users are logged on.'
+  }
+  @{
+    Path = 'HKLM:\SOFTWARE\Policies\Microsoft\Windows\WindowsUpdate'
+    Name = 'ExcludeWUDriversInQualityUpdate'
+    Preferred = 1
+    Default = $null
+    Type = 'DWord'
+    Group = 'DriverUpdates'
+    Description = 'Exclude drivers from Windows quality updates.'
+  }
+  @{
+    Path = 'HKLM:\SOFTWARE\Microsoft\WindowsUpdate\UpdatePolicy\PolicyState'
+    Name = 'ExcludeWUDrivers'
+    Preferred = 1
+    Default = $null
+    Type = 'DWord'
+    Group = 'DriverUpdates'
+    Description = 'Exclude drivers policy state.'
+  }
+  @{
+    Path = 'HKLM:\SOFTWARE\Policies\Microsoft\Windows\WindowsUpdate\AU'
+    Name = 'NoAutoUpdate'
+    Preferred = 0
+    Default = $null
+    Type = 'DWord'
+    Group = 'Schedule'
+    Description = 'Keep automatic updates enabled while using configured schedule values.'
+  }
+  @{
+    Path = 'HKLM:\SOFTWARE\Policies\Microsoft\Windows\WindowsUpdate\AU'
+    Name = 'AUOptions'
+    Preferred = 4
+    Default = $null
+    Type = 'DWord'
+    Group = 'Schedule'
+    Description = 'Auto download and schedule install.'
+  }
+  @{
+    Path = 'HKLM:\SOFTWARE\Policies\Microsoft\Windows\WindowsUpdate\AU'
+    Name = 'ScheduledInstallDay'
+    Preferred = 0
+    Default = $null
+    Type = 'DWord'
+    Group = 'Schedule'
+    Description = 'Install updates every day when scheduled.'
+  }
+  @{
+    Path = 'HKLM:\SOFTWARE\Policies\Microsoft\Windows\WindowsUpdate\AU'
+    Name = 'ScheduledInstallTime'
+    Preferred = 3
+    Default = $null
+    Type = 'DWord'
+    Group = 'Schedule'
+    Description = 'Scheduled install hour, 24-hour local time.'
+  }
+)
+
+if ($ExportConfig) {
+  if ($DryRun) { Write-Log -Message '-DryRun cannot be combined with -ExportConfig.' -Color Red; exit 1 }
+  if ($PSBoundParameters.ContainsKey('ExportPath') -and -not [string]::IsNullOrWhiteSpace($ExportPath)) {
+    $_exportPath = $ExecutionContext.SessionState.Path.GetUnresolvedProviderPathFromPSPath($ExportPath)
+    $updateSettings | ConvertTo-Json -Depth 3 | Out-File -FilePath $_exportPath -Encoding utf8
+    Write-Log -Message "Default update settings exported to: $_exportPath" -Color Green
+  }
+  else { $updateSettings | ConvertTo-Json -Depth 3 }
+  exit 0
+}
+
+if ($PSBoundParameters.ContainsKey('Config')) {
+  if ([string]::IsNullOrWhiteSpace($Config)) { Write-Log -Message '-Config requires a path to a JSON file.' -Color Red; exit 1 }
+  $_configPath = $ExecutionContext.SessionState.Path.GetUnresolvedProviderPathFromPSPath($Config)
+  if (-not (Test-Path -LiteralPath $_configPath)) { Write-Log -Message "Config file not found: '$_configPath'" -Color Red; exit 1 }
+  try { $_overrides = ConvertFrom-Json -InputObject (Get-Content -LiteralPath $_configPath -Raw -ErrorAction Stop) -ErrorAction Stop; if ($_overrides -isnot [array]) { $_overrides = @($_overrides) } }
+  catch { Write-Log -Message "Failed to parse config file '$_configPath': $_" -Color Red; exit 1 }
+  Write-Log -Message "Merging config: $_configPath`n" -Color Yellow
+  Merge-ObjectArrays -Base $updateSettings -Overrides $_overrides
+  Write-Log -Message "  -> $($_overrides.Count) override(s) processed`n" -Color Gray
+}
+
+$targetLabel = if ($Undo) { 'Restoring' } else { 'Applying' }
+$anyChanges = $false
+foreach ($entry in $updateSettings) {
+  $targetValue = if ($Undo) { $entry.Default } else { $entry.Preferred }
+  if ($Undo -and $null -eq $entry.Default) {
+    Write-Log -Message "$targetLabel update setting: Remove '$($entry.Name)' - $($entry.Description)" -Color Yellow
+    if ($DryRun) { Write-Log -Message "  -> Would remove $($entry.Path)\$($entry.Name)" -Color Gray; continue }
+    $result = Remove-RegistryValue -Path $entry.Path -Name $entry.Name
+  }
+  else {
+    Write-Log -Message "$targetLabel update setting: $($entry.Name) = '$targetValue' - $($entry.Description)" -Color Yellow
+    if ($DryRun) { Write-Log -Message "  -> Would set $($entry.Path)\$($entry.Name) = '$targetValue' ($($entry.Type))" -Color Gray; continue }
+    $result = Set-RegistryValue -Path $entry.Path -Name $entry.Name -Value $targetValue -Type $entry.Type
+  }
+  if ($result) { Write-Log -Message "  -> $($result.Status)" -Color Gray; if ($result.Status -in @('Created', 'Updated', 'Removed')) { $anyChanges = $true } }
+  else { Write-Log -Message "  -> FAILED - could not process '$($entry.Name)'" -Color Red }
+}
+
+if ($DryRun) { Write-Log -Message "`nDRY RUN COMPLETE - no changes were made" -Color Yellow }
+elseif ($anyChanges) { Write-Log -Message "`nWindows Update settings have been processed." -Color Green }
+else { Write-Log -Message "`nAll registry values were already at the desired target - nothing to do." -Color Green }

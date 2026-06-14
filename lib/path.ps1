@@ -1,8 +1,8 @@
-﻿#Requires -Version 5.0
+#Requires -Version 5.0
 
 function Test-PathExists {
   # ref: https://learn.microsoft.com/en-us/powershell/utility-modules/psscriptanalyzer/using-scriptanalyzer?view=ps-modules#suppressing-rules
-  [Diagnostics.CodeAnalysis.SuppressMessageAttribute("PSUseSingularNouns", '', Justification = "Exists is not a plural noun but rather a verb.", Target='Test-PathExists')]
+  [Diagnostics.CodeAnalysis.SuppressMessageAttribute("PSUseSingularNouns", '', Justification = "Exists is not a plural noun but rather a verb.", Scope = 'Function', Target = 'Test-PathExists')]
 
   <#
     .SYNOPSIS
@@ -25,7 +25,8 @@ function Test-PathExists {
 
   if ([System.IO.File]::Exists($Path)) {
     return $true
-  } else {
+  }
+  else {
     return $false
   }
 }
@@ -56,10 +57,23 @@ function Get-BasePath {
   [string]$_home = ''
 
 
-  if ($PSVersionTable.OS -match "Windows") {
-    $_home = $env:LOCALAPPDATA ?? (Join-Path -Path $env:HOMEDRIVE "Users\$_user\AppData\Local")
-  } else {
-    $_home = ($env:HOME).EndsWith($_user) ? (Join-Path -Path $env:HOME ".cache") : (Join-Path -Path $env:HOME "$_user/.cache")
+  $_isWindows = ([System.Environment]::OSVersion.Platform -eq [System.PlatformID]::Win32NT)
+
+  if ($_isWindows) {
+    if ([string]::IsNullOrWhiteSpace($env:LOCALAPPDATA)) {
+      $_home = Join-Path -Path $env:HOMEDRIVE -ChildPath "Users\$_user\AppData\Local"
+    }
+    else {
+      $_home = $env:LOCALAPPDATA
+    }
+  }
+  else {
+    if ($env:HOME.EndsWith($_user)) {
+      $_home = Join-Path -Path $env:HOME -ChildPath '.cache'
+    }
+    else {
+      $_home = Join-Path -Path $env:HOME -ChildPath "$_user/.cache"
+    }
   }
 
   return Join-Path -Path $_home (".{0}" -f $Directory)
@@ -157,7 +171,7 @@ function Get-NewPath {
   #>
 
   param (
-    [Parameter(Mandatory=$true)]
+    [Parameter(Mandatory = $true)]
     [string]$Directory
   )
 
@@ -166,7 +180,8 @@ function Get-NewPath {
 
   if ($exists) {
     throw "Cannot use path: $path. Path exists!"
-  } else {
+  }
+  else {
     return $path
   }
 }

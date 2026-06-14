@@ -1,4 +1,4 @@
-﻿#Requires -Version 5.0
+#Requires -Version 5.0
 
 function Show-Color {
   <#
@@ -23,9 +23,6 @@ function Show-Color {
 
 
 function Write-Log {
-  # ref: https://learn.microsoft.com/en-us/powershell/utility-modules/psscriptanalyzer/using-scriptanalyzer?view=ps-modules#suppressing-rules
-  [Diagnostics.CodeAnalysis.SuppressMessageAttribute("PSAvoidUsingWriteHost", "", Justification = "Write-Output does not support '-ForegroundColor'.")]
-
   <#
     .SYNOPSIS
       Write a message to standard output with color and optional timestamp.
@@ -42,6 +39,8 @@ function Write-Log {
       License: MIT
   #>
 
+  [Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSAvoidUsingWriteHost', '', Justification = 'Write-Output does not support -ForegroundColor.')]
+  [Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSAvoidOverwritingBuiltInCmdlets', '', Justification = 'libps1 intentionally exposes its established Write-Log helper.')]
   [CmdletBinding()]
   param (
     [Parameter(Mandatory = $true)]
