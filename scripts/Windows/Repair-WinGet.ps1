@@ -13,6 +13,8 @@
 
 .PARAMETER DryRun
   Preview the repair steps without executing them.
+.PARAMETER PassThru
+  Return structured operation results.
 
 .EXAMPLE
   PS> ./Repair-WinGet.ps1
@@ -39,7 +41,11 @@ param (
     HelpMessage = 'Preview the repair steps without executing them.'
   )]
   [switch]
-  $DryRun
+  $DryRun,
+
+  [Parameter(Mandatory = $false)]
+  [switch]
+  $PassThru
 )
 
 # ---- Module import -----------------------------------------------------------
@@ -55,10 +61,12 @@ if ($DryRun) {
 }
 
 $anyFailures = $false
+$results = New-Object System.Collections.ArrayList
 
 # Step 1 - Install / update the NuGet package provider
 if ($DryRun) {
   Write-Log -Message '[DRY RUN] Would install/update NuGet package provider.' -Color Yellow
+  Add-OperationResult -Results $results -Target 'NuGet' -Source 'PackageProvider' -Action 'Install' -Status 'Skipped' -Detail 'DryRun'
 }
 else {
   Write-Log -Message 'Step 1/3: Installing NuGet package provider ...' -Color Yellow
@@ -66,9 +74,11 @@ else {
   try {
     $null = Install-PackageProvider -Name NuGet -Force -ErrorAction Stop
     Write-Log -Message '  -> Done - NuGet package provider is ready.' -Color Green
+    Add-OperationResult -Results $results -Target 'NuGet' -Source 'PackageProvider' -Action 'Install' -Status 'Completed' -Detail 'NuGet package provider is ready.'
   }
   catch {
     Write-Log -Message "  -> FAILED - could not install NuGet: $_" -Color Red
+    Add-OperationResult -Results $results -Target 'NuGet' -Source 'PackageProvider' -Action 'Install' -Status 'Failed' -Detail $_.Exception.Message
     $anyFailures = $true
   }
 }
@@ -76,6 +86,7 @@ else {
 # Step 2 - Install / update the Microsoft.WinGet.Client module
 if ($DryRun) {
   Write-Log -Message '[DRY RUN] Would install/update Microsoft.WinGet.Client module.' -Color Yellow
+  Add-OperationResult -Results $results -Target 'Microsoft.WinGet.Client' -Source 'PowerShellGallery' -Action 'Install' -Status 'Skipped' -Detail 'DryRun'
 }
 else {
   Write-Log -Message 'Step 2/3: Installing Microsoft.WinGet.Client module ...' -Color Yellow
@@ -83,9 +94,11 @@ else {
   try {
     $null = Install-Module -Name Microsoft.WinGet.Client -Force -Repository PSGallery -ErrorAction Stop
     Write-Log -Message '  -> Done - Microsoft.WinGet.Client module is ready.' -Color Green
+    Add-OperationResult -Results $results -Target 'Microsoft.WinGet.Client' -Source 'PowerShellGallery' -Action 'Install' -Status 'Completed' -Detail 'Microsoft.WinGet.Client module is ready.'
   }
   catch {
     Write-Log -Message "  -> FAILED - could not install Microsoft.WinGet.Client: $_" -Color Red
+    Add-OperationResult -Results $results -Target 'Microsoft.WinGet.Client' -Source 'PowerShellGallery' -Action 'Install' -Status 'Failed' -Detail $_.Exception.Message
     $anyFailures = $true
   }
 }
@@ -93,6 +106,7 @@ else {
 # Step 3 - Run the official WinGet repair command
 if ($DryRun) {
   Write-Log -Message '[DRY RUN] Would run Repair-WinGetPackageManager -Force -Latest.' -Color Yellow
+  Add-OperationResult -Results $results -Target 'Repair-WinGetPackageManager' -Source 'Microsoft.WinGet.Client' -Action 'Repair' -Status 'Skipped' -Detail 'DryRun'
 }
 else {
   Write-Log -Message 'Step 3/3: Running Repair-WinGetPackageManager ...' -Color Yellow
@@ -100,9 +114,11 @@ else {
   try {
     $null = Repair-WinGetPackageManager -Force -Latest -ErrorAction Stop
     Write-Log -Message '  -> Done - WinGet repair completed.' -Color Green
+    Add-OperationResult -Results $results -Target 'Repair-WinGetPackageManager' -Source 'Microsoft.WinGet.Client' -Action 'Repair' -Status 'Completed' -Detail 'WinGet repair completed.'
   }
   catch {
     Write-Log -Message "  -> FAILED - Repair-WinGetPackageManager threw an error: $_" -Color Red
+    Add-OperationResult -Results $results -Target 'Repair-WinGetPackageManager' -Source 'Microsoft.WinGet.Client' -Action 'Repair' -Status 'Failed' -Detail $_.Exception.Message
     $anyFailures = $true
   }
 }
@@ -116,4 +132,13 @@ elseif ($anyFailures) {
 }
 else {
   Write-Log -Message "`nWinGet repair completed successfully." -Color Green
+}
+
+$_operationLog = Write-OperationResultLog -Results $results -ScriptName 'Repair-WinGet'
+if ($_operationLog) {
+  Write-Log -Message "Operation log: $_operationLog" -Color Gray
+}
+
+if ($PassThru -or $DryRun) {
+  $results
 }

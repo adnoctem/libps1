@@ -70,22 +70,6 @@ if ($DryRun) {
   Write-Log -Message "DRY RUN - no OneDrive changes will be applied`n" -Color Yellow
 }
 
-function New-OneDriveResult {
-  [Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSUseShouldProcessForStateChangingFunctions', '', Justification = 'Factory helper only creates a result object.')]
-  param([string]$Target, [string]$Action, [string]$Status, [string]$Detail)
-  [PSCustomObject]@{
-    Target = $Target
-    Action = $Action
-    Status = $Status
-    Detail = $Detail
-  }
-}
-
-function Add-OneDriveResult {
-  param([System.Collections.ArrayList]$Results, [string]$Target, [string]$Action, [string]$Status, [string]$Detail)
-  [void]$Results.Add((New-OneDriveResult -Target $Target -Action $Action -Status $Status -Detail $Detail))
-}
-
 function Get-OneDrivePath {
   [CmdletBinding()]
   param()
@@ -135,14 +119,14 @@ function Invoke-OneDriveUninstaller {
     if ($PSCmdlet.ShouldProcess($_path, 'Run OneDriveSetup.exe /uninstall')) {
       try {
         $_process = Start-Process -FilePath $_path -ArgumentList '/uninstall' -Wait -PassThru -ErrorAction Stop
-        Add-OneDriveResult -Results $Results -Target $_path -Action 'Uninstall' -Status "ExitCode:$($_process.ExitCode)" -Detail 'OneDrive setup uninstaller executed.'
+        Add-OperationResult -Results $Results -Target $_path -Action 'Uninstall' -Status "ExitCode:$($_process.ExitCode)" -Detail 'OneDrive setup uninstaller executed.'
       }
       catch {
-        Add-OneDriveResult -Results $Results -Target $_path -Action 'Uninstall' -Status 'Failed' -Detail $_.Exception.Message
+        Add-OperationResult -Results $Results -Target $_path -Action 'Uninstall' -Status 'Failed' -Detail $_.Exception.Message
       }
     }
     else {
-      Add-OneDriveResult -Results $Results -Target $_path -Action 'Uninstall' -Status 'Skipped' -Detail 'WhatIf'
+      Add-OperationResult -Results $Results -Target $_path -Action 'Uninstall' -Status 'Skipped' -Detail 'WhatIf'
     }
   }
 
@@ -151,11 +135,11 @@ function Invoke-OneDriveUninstaller {
 
   foreach ($_program in $_registryMatches) {
     $_uninstallResult = Uninstall-Win32Program -InputObject $_program -Quiet -Force -DryRun:$DryRun -WhatIf:$WhatIfPreference
-    Add-OneDriveResult -Results $Results -Target $_program.DisplayName -Action 'UninstallRegistryEntry' -Status $_uninstallResult.Status -Detail $_uninstallResult.Error
+    Add-OperationResult -Results $Results -Target $_program.DisplayName -Action 'UninstallRegistryEntry' -Status $_uninstallResult.Status -Detail $_uninstallResult.Error
   }
 
   if ($_setupPaths.Count -eq 0 -and $_registryMatches.Count -eq 0) {
-    Add-OneDriveResult -Results $Results -Target 'OneDrive' -Action 'Uninstall' -Status 'Skipped' -Detail 'No OneDrive uninstaller was found.'
+    Add-OperationResult -Results $Results -Target 'OneDrive' -Action 'Uninstall' -Status 'Skipped' -Detail 'No OneDrive uninstaller was found.'
   }
 }
 
@@ -187,13 +171,13 @@ function Set-OneDrivePolicy {
 
   foreach ($_setting in $_settings) {
     if ($DryRun) {
-      Add-OneDriveResult -Results $Results -Target "$($_setting.Path)\$($_setting.Name)" -Action 'SetPolicy' -Status 'Skipped' -Detail 'DryRun'
+      Add-OperationResult -Results $Results -Target "$($_setting.Path)\$($_setting.Name)" -Action 'SetPolicy' -Status 'Skipped' -Detail 'DryRun'
       continue
     }
 
     $_result = Set-RegistryValue -Path $_setting.Path -Name $_setting.Name -Value $_setting.Value -Type $_setting.Type
     $_status = if ($_result) { $_result.Status } else { 'Failed' }
-    Add-OneDriveResult -Results $Results -Target "$($_setting.Path)\$($_setting.Name)" -Action 'SetPolicy' -Status $_status -Detail 'OneDrive reinstall/sync prevention policy.'
+    Add-OperationResult -Results $Results -Target "$($_setting.Path)\$($_setting.Name)" -Action 'SetPolicy' -Status $_status -Detail 'OneDrive reinstall/sync prevention policy.'
   }
 }
 
@@ -209,13 +193,13 @@ function Hide-OneDriveFromExplorer {
 
   foreach ($_key in $_keys) {
     if ($DryRun) {
-      Add-OneDriveResult -Results $Results -Target "$_key\System.IsPinnedToNameSpaceTree" -Action 'HideExplorerEntry' -Status 'Skipped' -Detail 'DryRun'
+      Add-OperationResult -Results $Results -Target "$_key\System.IsPinnedToNameSpaceTree" -Action 'HideExplorerEntry' -Status 'Skipped' -Detail 'DryRun'
       continue
     }
 
     $_result = Set-RegistryValue -Path $_key -Name 'System.IsPinnedToNameSpaceTree' -Value 0 -Type DWord
     $_status = if ($_result) { $_result.Status } else { 'Failed' }
-    Add-OneDriveResult -Results $Results -Target "$_key\System.IsPinnedToNameSpaceTree" -Action 'HideExplorerEntry' -Status $_status -Detail 'OneDrive navigation pane entry hidden.'
+    Add-OperationResult -Results $Results -Target "$_key\System.IsPinnedToNameSpaceTree" -Action 'HideExplorerEntry' -Status $_status -Detail 'OneDrive navigation pane entry hidden.'
   }
 }
 
@@ -234,13 +218,13 @@ function Remove-OneDriveStartupEntry {
   foreach ($_key in $_runKeys) {
     foreach ($_name in $_names) {
       if ($DryRun) {
-        Add-OneDriveResult -Results $Results -Target "$_key\$_name" -Action 'RemoveStartupEntry' -Status 'Skipped' -Detail 'DryRun'
+        Add-OperationResult -Results $Results -Target "$_key\$_name" -Action 'RemoveStartupEntry' -Status 'Skipped' -Detail 'DryRun'
         continue
       }
 
       $_result = Remove-RegistryValue -Path $_key -Name $_name
       $_status = if ($_result) { $_result.Status } else { 'Failed' }
-      Add-OneDriveResult -Results $Results -Target "$_key\$_name" -Action 'RemoveStartupEntry' -Status $_status -Detail 'OneDrive startup entry removed when present.'
+      Add-OperationResult -Results $Results -Target "$_key\$_name" -Action 'RemoveStartupEntry' -Status $_status -Detail 'OneDrive startup entry removed when present.'
     }
   }
 }
@@ -256,7 +240,7 @@ function Move-OneDriveKnownFolder {
 
   $_source = Join-Path -Path $OneDriveRoot -ChildPath $FolderName
   if (-not (Test-Path -LiteralPath $_source)) {
-    Add-OneDriveResult -Results $Results -Target $_source -Action 'MigrateKnownFolder' -Status 'Skipped' -Detail 'Folder not found.'
+    Add-OperationResult -Results $Results -Target $_source -Action 'MigrateKnownFolder' -Status 'Skipped' -Detail 'Folder not found.'
     return
   }
 
@@ -270,10 +254,10 @@ function Move-OneDriveKnownFolder {
         if (-not $DryRun) {
           Copy-Item -LiteralPath $_source -Destination $_backupDestination -Recurse -Force -ErrorAction Stop
         }
-        Add-OneDriveResult -Results $Results -Target $_source -Action 'BackupKnownFolder' -Status 'Completed' -Detail $_backupDestination
+        Add-OperationResult -Results $Results -Target $_source -Action 'BackupKnownFolder' -Status 'Completed' -Detail $_backupDestination
       }
       catch {
-        Add-OneDriveResult -Results $Results -Target $_source -Action 'BackupKnownFolder' -Status 'Failed' -Detail $_.Exception.Message
+        Add-OperationResult -Results $Results -Target $_source -Action 'BackupKnownFolder' -Status 'Failed' -Detail $_.Exception.Message
         return
       }
     }
@@ -286,7 +270,7 @@ function Move-OneDriveKnownFolder {
   $_items = @(Get-ChildItem -LiteralPath $_source -Force -ErrorAction SilentlyContinue)
   foreach ($_item in $_items) {
     if (Test-OneDriveCloudOnlyFile -Path $_item.FullName) {
-      Add-OneDriveResult -Results $Results -Target $_item.FullName -Action 'MigrateKnownFolder' -Status 'Skipped' -Detail 'Cloud-only or inaccessible item.'
+      Add-OperationResult -Results $Results -Target $_item.FullName -Action 'MigrateKnownFolder' -Status 'Skipped' -Detail 'Cloud-only or inaccessible item.'
       continue
     }
 
@@ -296,10 +280,10 @@ function Move-OneDriveKnownFolder {
         if (-not $DryRun) {
           Move-Item -LiteralPath $_item.FullName -Destination $_target -Force -ErrorAction Stop
         }
-        Add-OneDriveResult -Results $Results -Target $_item.FullName -Action 'MigrateKnownFolder' -Status 'Moved' -Detail $_target
+        Add-OperationResult -Results $Results -Target $_item.FullName -Action 'MigrateKnownFolder' -Status 'Moved' -Detail $_target
       }
       catch {
-        Add-OneDriveResult -Results $Results -Target $_item.FullName -Action 'MigrateKnownFolder' -Status 'Failed' -Detail $_.Exception.Message
+        Add-OperationResult -Results $Results -Target $_item.FullName -Action 'MigrateKnownFolder' -Status 'Failed' -Detail $_.Exception.Message
       }
     }
   }
@@ -352,12 +336,12 @@ function Restore-KnownFolderRegistry {
 
   foreach ($_setting in $_settings) {
     if ($DryRun) {
-      Add-OneDriveResult -Results $Results -Target "$($_setting.Path)\$($_setting.Name)" -Action 'RestoreKnownFolderRegistry' -Status 'Skipped' -Detail 'DryRun'
+      Add-OperationResult -Results $Results -Target "$($_setting.Path)\$($_setting.Name)" -Action 'RestoreKnownFolderRegistry' -Status 'Skipped' -Detail 'DryRun'
       continue
     }
     $_result = Set-RegistryValue -Path $_setting.Path -Name $_setting.Name -Value $_setting.Value -Type $_setting.Type
     $_status = if ($_result) { $_result.Status } else { 'Failed' }
-    Add-OneDriveResult -Results $Results -Target "$($_setting.Path)\$($_setting.Name)" -Action 'RestoreKnownFolderRegistry' -Status $_status -Detail $_setting.Value
+    Add-OperationResult -Results $Results -Target "$($_setting.Path)\$($_setting.Name)" -Action 'RestoreKnownFolderRegistry' -Status $_status -Detail $_setting.Value
   }
 }
 
@@ -369,10 +353,10 @@ foreach ($_process in $_processes) {
   if ($PSCmdlet.ShouldProcess($_process.ProcessName, 'Stop OneDrive process')) {
     try {
       Stop-Process -Id $_process.Id -Force -ErrorAction Stop
-      Add-OneDriveResult -Results $_results -Target $_process.ProcessName -Action 'StopProcess' -Status 'Stopped' -Detail "PID $($_process.Id)"
+      Add-OperationResult -Results $_results -Target $_process.ProcessName -Action 'StopProcess' -Status 'Stopped' -Detail "PID $($_process.Id)"
     }
     catch {
-      Add-OneDriveResult -Results $_results -Target $_process.ProcessName -Action 'StopProcess' -Status 'Failed' -Detail $_.Exception.Message
+      Add-OperationResult -Results $_results -Target $_process.ProcessName -Action 'StopProcess' -Status 'Failed' -Detail $_.Exception.Message
     }
   }
 }
@@ -408,10 +392,10 @@ if ($RemoveScheduledTasks) {
         if (-not $DryRun) {
           Unregister-ScheduledTask -TaskName $_task.TaskName -TaskPath $_task.TaskPath -Confirm:$false -ErrorAction Stop
         }
-        Add-OneDriveResult -Results $_results -Target "$($_task.TaskPath)$($_task.TaskName)" -Action 'RemoveScheduledTask' -Status 'Removed' -Detail ''
+        Add-OperationResult -Results $_results -Target "$($_task.TaskPath)$($_task.TaskName)" -Action 'RemoveScheduledTask' -Status 'Removed' -Detail ''
       }
       catch {
-        Add-OneDriveResult -Results $_results -Target "$($_task.TaskPath)$($_task.TaskName)" -Action 'RemoveScheduledTask' -Status 'Failed' -Detail $_.Exception.Message
+        Add-OperationResult -Results $_results -Target "$($_task.TaskPath)$($_task.TaskName)" -Action 'RemoveScheduledTask' -Status 'Failed' -Detail $_.Exception.Message
       }
     }
   }
@@ -423,13 +407,13 @@ if ($RemoveUserFolder) {
     $_resolved = $ExecutionContext.SessionState.Path.GetUnresolvedProviderPathFromPSPath($_root)
     $_profile = $ExecutionContext.SessionState.Path.GetUnresolvedProviderPathFromPSPath($env:USERPROFILE)
     if (-not $_resolved.StartsWith($_profile, [System.StringComparison]::OrdinalIgnoreCase)) {
-      Add-OneDriveResult -Results $_results -Target $_root -Action 'RemoveUserFolder' -Status 'Skipped' -Detail 'Path is outside the current user profile.'
+      Add-OperationResult -Results $_results -Target $_root -Action 'RemoveUserFolder' -Status 'Skipped' -Detail 'Path is outside the current user profile.'
       continue
     }
 
     $_children = @(Get-ChildItem -LiteralPath $_resolved -Force -ErrorAction SilentlyContinue)
     if ($_children.Count -gt 0 -and -not $Force) {
-      Add-OneDriveResult -Results $_results -Target $_resolved -Action 'RemoveUserFolder' -Status 'Skipped' -Detail 'Folder is not empty. Re-run with -Force only after validating contents.'
+      Add-OperationResult -Results $_results -Target $_resolved -Action 'RemoveUserFolder' -Status 'Skipped' -Detail 'Folder is not empty. Re-run with -Force only after validating contents.'
       continue
     }
 
@@ -438,10 +422,10 @@ if ($RemoveUserFolder) {
         if (-not $DryRun) {
           Remove-Item -LiteralPath $_resolved -Force -Recurse:$Force -ErrorAction Stop
         }
-        Add-OneDriveResult -Results $_results -Target $_resolved -Action 'RemoveUserFolder' -Status 'Removed' -Detail ''
+        Add-OperationResult -Results $_results -Target $_resolved -Action 'RemoveUserFolder' -Status 'Removed' -Detail ''
       }
       catch {
-        Add-OneDriveResult -Results $_results -Target $_resolved -Action 'RemoveUserFolder' -Status 'Failed' -Detail $_.Exception.Message
+        Add-OperationResult -Results $_results -Target $_resolved -Action 'RemoveUserFolder' -Status 'Failed' -Detail $_.Exception.Message
       }
     }
   }
@@ -449,12 +433,12 @@ if ($RemoveUserFolder) {
 
 if ($Instant) {
   if ($DryRun) {
-    Add-OneDriveResult -Results $_results -Target 'explorer.exe' -Action 'RestartExplorer' -Status 'Skipped' -Detail 'DryRun'
+    Add-OperationResult -Results $_results -Target 'explorer.exe' -Action 'RestartExplorer' -Status 'Skipped' -Detail 'DryRun'
   }
   elseif ($PSCmdlet.ShouldProcess('explorer.exe', 'Restart Explorer')) {
     Stop-Process -Name explorer -Force -ErrorAction SilentlyContinue
     Start-Process explorer
-    Add-OneDriveResult -Results $_results -Target 'explorer.exe' -Action 'RestartExplorer' -Status 'Completed' -Detail ''
+    Add-OperationResult -Results $_results -Target 'explorer.exe' -Action 'RestartExplorer' -Status 'Completed' -Detail ''
   }
 }
 
@@ -463,6 +447,10 @@ $_skipped = @($_results | Where-Object { $_.Status -eq 'Skipped' }).Count
 $_completed = @($_results | Where-Object { $_.Status -notin @('Failed', 'Skipped') }).Count
 $_color = if ($_failed -gt 0) { 'Yellow' } else { 'Green' }
 Write-Log -Message "`nOneDrive removal workflow complete. Completed: $_completed | Skipped: $_skipped | Failed: $_failed" -Color $_color
+$_operationLog = Write-OperationResultLog -Results $_results -ScriptName 'Remove-OneDrive'
+if ($_operationLog) {
+  Write-Log -Message "Operation log: $_operationLog" -Color Gray
+}
 
 if ($PassThru -or $DryRun) {
   $_results

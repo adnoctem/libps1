@@ -20,6 +20,8 @@
 .PARAMETER Instant
   Apply the registry change instantly via SystemParametersInfo.
   NOT supported together with -Undo - restart the machine to revert instead.
+.PARAMETER PassThru
+  Return structured operation results.
 
 .EXAMPLE
   PS> ./Disable-PointerAcceleration.ps1
@@ -75,7 +77,11 @@ param (
     HelpMessage = 'Apply the registry change instantly via SystemParametersInfo. NOT supported together with -Undo - restart the machine to revert instead.'
   )]
   [switch]
-  $Instant
+  $Instant,
+
+  [Parameter(Mandatory = $false)]
+  [switch]
+  $PassThru
 )
 
 # ---- Module import -----------------------------------------------------------
@@ -124,23 +130,33 @@ $mouseValues = @(
 
 $targetLabel = if ($Undo) { 'Enabling' } else { 'Disabling' }
 $anyChanges = $false
+$results = New-Object System.Collections.ArrayList
 
 # Apply registry values
 foreach ($entry in $mouseValues) {
   $targetValue = if ($Undo) { $entry.On } else { $entry.Off }
+  $target = "$registryPath\$($entry.Name)"
 
   Write-Log -Message "$targetLabel pointer acceleration: $($entry.Name) = '$targetValue'" -Color Yellow
+
+  if ($DryRun) {
+    Write-Log -Message "  -> Would set $target = '$targetValue' (String)" -Color Gray
+    Add-OperationResult -Results $results -Target $target -Source 'Registry' -Action 'SetValue' -Status 'Skipped' -Detail 'DryRun'
+    continue
+  }
 
   $result = Set-RegistryValue -Path $registryPath -Name $entry.Name -Value $targetValue -Type String
 
   if ($result) {
     Write-Log -Message "  -> $($result.Status)" -Color Gray
+    Add-OperationResult -Results $results -Target $target -Source 'Registry' -Action 'SetValue' -Status $result.Status -Detail 'Pointer acceleration registry value.'
     if ($result.Status -in @('Created', 'Updated')) {
       $anyChanges = $true
     }
   }
   else {
     Write-Log -Message "  -> FAILED - could not write '$($entry.Name)'" -Color Red
+    Add-OperationResult -Results $results -Target $target -Source 'Registry' -Action 'SetValue' -Status 'Failed' -Detail 'Could not write pointer acceleration registry value.'
   }
 }
 
@@ -161,13 +177,16 @@ public class NativeMethods {
   $applied = [NativeMethods]::SystemParametersInfo(0x0004, 0, [IntPtr]::Zero, 0x0002)
   if ($applied) {
     Write-Log -Message '  -> Done - pointer acceleration settings applied immediately.' -Color Green
+    Add-OperationResult -Results $results -Target 'SystemParametersInfo/SPI_SETMOUSE' -Source 'User32' -Action 'ApplyInstant' -Status 'Completed' -Detail 'Pointer acceleration settings applied immediately.'
   }
   else {
     Write-Log -Message '  -> Warning: SystemParametersInfo returned false - the change may not have been applied instantly. Try signing out and back in.' -Color Yellow
+    Add-OperationResult -Results $results -Target 'SystemParametersInfo/SPI_SETMOUSE' -Source 'User32' -Action 'ApplyInstant' -Status 'Failed' -Detail 'SystemParametersInfo returned false.'
   }
 }
 elseif ($Instant -and $DryRun) {
   Write-Log -Message "`n[DRY RUN] Would call SystemParametersInfo to apply changes instantly." -Color Yellow
+  Add-OperationResult -Results $results -Target 'SystemParametersInfo/SPI_SETMOUSE' -Source 'User32' -Action 'ApplyInstant' -Status 'Skipped' -Detail 'DryRun'
 }
 
 # Summary
@@ -187,4 +206,13 @@ elseif ($anyChanges) {
 }
 else {
   Write-Log -Message "`nAll registry values were already at the desired target - nothing to do." -Color Green
+}
+
+$_operationLog = Write-OperationResultLog -Results $results -ScriptName 'Disable-PointerAcceleration'
+if ($_operationLog) {
+  Write-Log -Message "Operation log: $_operationLog" -Color Gray
+}
+
+if ($PassThru -or $DryRun) {
+  $results
 }

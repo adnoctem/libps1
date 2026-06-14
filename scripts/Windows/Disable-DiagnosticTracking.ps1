@@ -17,6 +17,8 @@
   Name and can override Preferred or Default values.
 .PARAMETER ExportConfig
   Export the default diagnostic tracking settings JSON and exit.
+.PARAMETER ExportCurrentState
+  Export current registry values as reusable JSON config and exit.
 .PARAMETER ExportPath
   File path used with -ExportConfig.
 .EXAMPLE
@@ -39,7 +41,7 @@
 #>
 
 [CmdletBinding(SupportsShouldProcess = $true)]
-param([switch]$Undo, [switch]$DryRun, [string]$Config, [switch]$ExportConfig, [string]$ExportPath)
+param([switch]$Undo, [switch]$DryRun, [string]$Config, [switch]$ExportConfig, [switch]$ExportCurrentState, [string]$ExportPath, [switch]$PassThru)
 
 # ---- Module import -----------------------------------------------------------
 $root = Split-Path (Split-Path $PSScriptRoot -Parent) -Parent
@@ -115,6 +117,20 @@ $diagnosticSettings = @(
   }
 )
 
+if ($ExportCurrentState) {
+  if ($DryRun) { Write-Log -Message '-DryRun cannot be combined with -ExportCurrentState.' -Color Red; exit 1 }
+  if ($ExportConfig) { Write-Log -Message '-ExportConfig cannot be combined with -ExportCurrentState.' -Color Red; exit 1 }
+  if ($Undo) { Write-Log -Message '-Undo cannot be combined with -ExportCurrentState.' -Color Red; exit 1 }
+  $_currentState = Export-RegistrySettingState -Settings $diagnosticSettings
+  if ($PSBoundParameters.ContainsKey('ExportPath') -and -not [string]::IsNullOrWhiteSpace($ExportPath)) {
+    $_exportPath = $ExecutionContext.SessionState.Path.GetUnresolvedProviderPathFromPSPath($ExportPath)
+    $_currentState | ConvertTo-Json -Depth 3 | Out-File -FilePath $_exportPath -Encoding utf8
+    Write-Log -Message "Current diagnostic tracking settings exported to: $_exportPath" -Color Green
+  }
+  else { $_currentState | ConvertTo-Json -Depth 3 }
+  exit 0
+}
+
 if ($ExportConfig) {
   if ($DryRun) { Write-Log -Message '-DryRun cannot be combined with -ExportConfig.' -Color Red; exit 1 }
   if ($PSBoundParameters.ContainsKey('ExportPath') -and -not [string]::IsNullOrWhiteSpace($ExportPath)) {
@@ -158,3 +174,12 @@ foreach ($entry in $diagnosticSettings) {
 if ($DryRun) { Write-Log -Message "`nDRY RUN COMPLETE - no changes were made" -Color Yellow }
 elseif ($anyChanges) { Write-Log -Message "`nDiagnostic tracking settings have been processed. Restart Windows for service start changes to take effect." -Color Green }
 else { Write-Log -Message "`nAll registry values were already at the desired target - nothing to do." -Color Green }
+$_operationResults = @(ConvertTo-RegistrySettingResult -Settings $diagnosticSettings -Undo:$Undo -DryRun:$DryRun)
+$_operationLog = Write-OperationResultLog -Results $_operationResults -ScriptName 'Disable-DiagnosticTracking'
+if ($_operationLog) {
+  Write-Log -Message "Operation log: $_operationLog" -Color Gray
+}
+
+if ($PassThru -or $DryRun) {
+  $_operationResults
+}

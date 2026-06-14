@@ -1,17 +1,18 @@
-# Map of short and long hive names to canonical PowerShell drive-qualified paths.
-# Values are the PS drive root (e.g. 'HKLM:'), not .NET enums, so they plug
-# directly into provider cmdlets (Get-Item, Set-ItemProperty, etc.).
+# Map of short and long hive names to canonical PowerShell provider paths.
+# HKLM: and HKCU: are default PowerShell drives; the remaining hives use the
+# Registry:: provider path because their short PS drives are not guaranteed to
+# exist in Windows PowerShell 5.1.
 $script:HiveMap = @{
   'HKLM' = 'HKLM:'
   'HKCU' = 'HKCU:'
-  'HKCR' = 'HKCR:'
-  'HKU' = 'HKU:'
-  'HKCC' = 'HKCC:'
+  'HKCR' = 'Registry::HKEY_CLASSES_ROOT'
+  'HKU' = 'Registry::HKEY_USERS'
+  'HKCC' = 'Registry::HKEY_CURRENT_CONFIG'
   'HKEY_LOCAL_MACHINE' = 'HKLM:'
   'HKEY_CURRENT_USER' = 'HKCU:'
-  'HKEY_CLASSES_ROOT' = 'HKCR:'
-  'HKEY_USERS' = 'HKU:'
-  'HKEY_CURRENT_CONFIG' = 'HKCC:'
+  'HKEY_CLASSES_ROOT' = 'Registry::HKEY_CLASSES_ROOT'
+  'HKEY_USERS' = 'Registry::HKEY_USERS'
+  'HKEY_CURRENT_CONFIG' = 'Registry::HKEY_CURRENT_CONFIG'
 }
 
 # Normalises any registry path format into a canonical PS drive path (HKLM:\...)
@@ -22,8 +23,10 @@ function ConvertTo-RegistryProviderPath {
     .DESCRIPTION
       Accepts short hive notation (HKLM\...), PS drive notation (HKLM:\...),
       Registry:: prefix (Registry::HKEY_LOCAL_MACHINE\...), or long .NET names
-      (HKEY_LOCAL_MACHINE\...).  Always returns a path like 'HKLM:\Software\...'.
-      Trailing slashes are stripped.
+      (HKEY_LOCAL_MACHINE\...). Returns a provider path that can be passed to
+      registry provider cmdlets. HKLM and HKCU use their default PowerShell
+      drives; hives such as HKEY_USERS use the Registry:: provider path because
+      aliases like HKU: are not present in every shell.
     .EXAMPLE
       PS> ConvertTo-RegistryProviderPath 'HKLM\Software\MyApp'
       HKLM:\Software\MyApp
@@ -122,20 +125,26 @@ function Resolve-RegistryPath {
     'HKCR' = [Microsoft.Win32.RegistryHive]::ClassesRoot
     'HKU' = [Microsoft.Win32.RegistryHive]::Users
     'HKCC' = [Microsoft.Win32.RegistryHive]::CurrentConfig
+    'HKEY_LOCAL_MACHINE' = [Microsoft.Win32.RegistryHive]::LocalMachine
+    'HKEY_CURRENT_USER' = [Microsoft.Win32.RegistryHive]::CurrentUser
+    'HKEY_CLASSES_ROOT' = [Microsoft.Win32.RegistryHive]::ClassesRoot
+    'HKEY_USERS' = [Microsoft.Win32.RegistryHive]::Users
+    'HKEY_CURRENT_CONFIG' = [Microsoft.Win32.RegistryHive]::CurrentConfig
   }
 
-  # Normalise path then extract the short hive name
+  # Normalise path then extract the hive name
   $_providerPath = ConvertTo-RegistryProviderPath -Path $Path
   if (-not $_providerPath) { return $null }
 
-  $_separator = $_providerPath.IndexOf('\')
+  $_registryPath = $_providerPath -replace '^Registry::', ''
+  $_separator = $_registryPath.IndexOf('\')
   if ($_separator -eq -1) {
-    $_hiveName = $_providerPath.TrimEnd(':')
+    $_hiveName = $_registryPath.TrimEnd(':')
     $_subKey = ''
   }
   else {
-    $_hiveName = $_providerPath.Substring(0, $_separator).TrimEnd(':')
-    $_subKey = $_providerPath.Substring($_separator + 1)
+    $_hiveName = $_registryPath.Substring(0, $_separator).TrimEnd(':')
+    $_subKey = $_registryPath.Substring($_separator + 1)
   }
 
   if (-not $_hiveEnum.ContainsKey($_hiveName)) {
@@ -147,9 +156,9 @@ function Resolve-RegistryPath {
 
   try {
     if ([string]::IsNullOrEmpty($_subKey)) {
-      return [Microsoft.Win32.Registry]::OpenBaseKey($_hive, [Microsoft.Win32.RegistryView]::Default)
+      return [Microsoft.Win32.RegistryKey]::OpenBaseKey($_hive, [Microsoft.Win32.RegistryView]::Default)
     }
-    $_root = [Microsoft.Win32.Registry]::OpenBaseKey($_hive, [Microsoft.Win32.RegistryView]::Default)
+    $_root = [Microsoft.Win32.RegistryKey]::OpenBaseKey($_hive, [Microsoft.Win32.RegistryView]::Default)
     return $_root.OpenSubKey($_subKey, $Writable)
   }
   catch [System.UnauthorizedAccessException] {
@@ -846,7 +855,7 @@ function Mount-DefaultUserHive {
       Path to NTUSER.DAT. Defaults to C:\Users\Default\NTUSER.DAT.
     .EXAMPLE
       Mount-DefaultUserHive
-      Set-RegistryValue -Path 'HKU:\DefaultUser\Software\...' -Name 'Foo' -Value 1
+      Set-RegistryValue -Path 'Registry::HKEY_USERS\DefaultUser\Software\...' -Name 'Foo' -Value 1
       Dismount-DefaultUserHive
     .NOTES
       reg.exe is used because hive loading is not exposed through the managed

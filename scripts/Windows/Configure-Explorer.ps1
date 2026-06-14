@@ -34,6 +34,8 @@
   Export the default Explorer settings as JSON to the console.  Use -ExportPath
   to write to a file instead.  Cannot be combined with -DryRun.
 
+.PARAMETER ExportCurrentState
+  Export current registry values as reusable JSON config and exit.
 .PARAMETER ExportPath
   When used together with -ExportConfig, writes the JSON to this file path
   instead of printing to the console.
@@ -163,10 +165,21 @@ param (
 
   [Parameter(
     Mandatory = $false,
+    HelpMessage = 'Export current Explorer registry values to reusable JSON config.'
+  )]
+  [switch]
+  $ExportCurrentState,
+
+  [Parameter(
+    Mandatory = $false,
     HelpMessage = 'File path for -ExportConfig.  When omitted the settings are printed to the console.'
   )]
   [string]
-  $ExportPath
+  $ExportPath,
+
+  [Parameter(Mandatory = $false)]
+  [switch]
+  $PassThru
 )
 
 # ---- Module import -----------------------------------------------------------
@@ -188,8 +201,8 @@ if ($SysPrep -and $Instant) {
 }
 
 # Registry target keys - when -SysPrep is active, redirect to the mounted
-# default user hive (HKU:\DefaultUser) instead of HKCU
-$regHive = if ($SysPrep) { 'HKU:\DefaultUser' } else { 'HKCU:' }
+# default user hive (Registry::HKEY_USERS\DefaultUser) instead of HKCU
+$regHive = if ($SysPrep) { 'Registry::HKEY_USERS\DefaultUser' } else { 'HKCU:' }
 $explorerKey = "$regHive\Software\Microsoft\Windows\CurrentVersion\Explorer"
 $advancedKey = "$explorerKey\Advanced"
 $cabinetStateKey = "$explorerKey\CabinetState"
@@ -726,6 +739,20 @@ $explorerSettings = @(
 )
 
 # -- Export config (print to console or write to disk and exit) ----------
+if ($ExportCurrentState) {
+  if ($DryRun) { Write-Log -Message '-DryRun cannot be combined with -ExportCurrentState.' -Color Red; exit 1 }
+  if ($ExportConfig) { Write-Log -Message '-ExportConfig cannot be combined with -ExportCurrentState.' -Color Red; exit 1 }
+  if ($Undo) { Write-Log -Message '-Undo cannot be combined with -ExportCurrentState.' -Color Red; exit 1 }
+  $_currentState = Export-RegistrySettingState -Settings $explorerSettings
+  if ($PSBoundParameters.ContainsKey('ExportPath') -and -not [string]::IsNullOrWhiteSpace($ExportPath)) {
+    $_exportPath = $ExecutionContext.SessionState.Path.GetUnresolvedProviderPathFromPSPath($ExportPath)
+    $_currentState | ConvertTo-Json -Depth 3 | Out-File -FilePath $_exportPath -Encoding utf8
+    Write-Log -Message "Current Explorer settings exported to: $_exportPath" -Color Green
+  }
+  else { $_currentState | ConvertTo-Json -Depth 3 }
+  exit 0
+}
+
 if ($ExportConfig) {
   if ($DryRun) {
     Write-Log -Message '-DryRun cannot be combined with -ExportConfig.' -Color Red
@@ -870,4 +897,13 @@ elseif ($anyChanges) {
 }
 else {
   Write-Log -Message "`nAll registry values were already at the desired target - nothing to do." -Color Green
+}
+$_operationResults = @(ConvertTo-RegistrySettingResult -Settings $_eligibleSettings -Undo:$Undo -DryRun:$DryRun)
+$_operationLog = Write-OperationResultLog -Results $_operationResults -ScriptName 'Configure-Explorer'
+if ($_operationLog) {
+  Write-Log -Message "Operation log: $_operationLog" -Color Gray
+}
+
+if ($PassThru -or $DryRun) {
+  $_operationResults
 }

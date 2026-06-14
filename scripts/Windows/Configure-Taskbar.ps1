@@ -6,7 +6,8 @@
 .DESCRIPTION
   Applies a curated taskbar profile using libps1 registry helpers. The exported
   JSON profile represents each registry value once, including mutually exclusive
-  modes such as search display, taskbar combining, and multi-monitor behavior.
+  modes such as search display, taskbar icon-only combining, and multi-monitor
+  behavior.
   Use -Undo to restore known Windows defaults or remove values where the source
   material only provided delete-on-undo behavior. Build-gated settings are
   skipped automatically on unsupported Windows releases.
@@ -24,6 +25,8 @@
   Name and can override Preferred or Default values.
 .PARAMETER ExportConfig
   Export the default taskbar settings JSON and exit.
+.PARAMETER ExportCurrentState
+  Export current registry values as reusable JSON config and exit.
 .PARAMETER ExportPath
   File path used with -ExportConfig.
 .EXAMPLE
@@ -56,7 +59,8 @@ param (
   [switch]$SysPrep,
   [string]$Config,
   [switch]$ExportConfig,
-  [string]$ExportPath
+  [switch]$ExportCurrentState,
+  [string]$ExportPath, [switch]$PassThru
 )
 
 # ---- Module import -----------------------------------------------------------
@@ -76,7 +80,7 @@ if ($SysPrep -and $Instant) {
 }
 
 $currentBuild = Get-OSBuildNumber
-$regHive = if ($SysPrep) { 'HKU:\DefaultUser' } else { 'HKCU:' }
+$regHive = if ($SysPrep) { 'Registry::HKEY_USERS\DefaultUser' } else { 'HKCU:' }
 $advancedKey = "$regHive\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced"
 $searchKey = "$regHive\Software\Microsoft\Windows\CurrentVersion\Search"
 $policyExplorerKey = "$regHive\Software\Microsoft\Windows\CurrentVersion\Policies\Explorer"
@@ -175,22 +179,22 @@ $taskbarSettings = @(
   @{
     Path = $advancedKey
     Name = 'TaskbarGlomLevel'
-    Preferred = 2
+    Preferred = 0
     Default = 0
     Type = 'DWord'
     MinBuild = 22000
     Group = 'Combining'
-    Description = 'Main taskbar combining. 0 always, 1 when full, 2 never.'
+    Description = 'Main taskbar combining. 0 always combine and hide labels, 1 when full, 2 never.'
   }
   @{
     Path = $advancedKey
     Name = 'MMTaskbarGlomLevel'
-    Preferred = 2
+    Preferred = 0
     Default = 0
     Type = 'DWord'
     MinBuild = 22000
     Group = 'Combining'
-    Description = 'Secondary taskbar combining. 0 always, 1 when full, 2 never.'
+    Description = 'Secondary taskbar combining. 0 always combine and hide labels, 1 when full, 2 never.'
   }
   @{
     Path = $advancedKey
@@ -203,6 +207,20 @@ $taskbarSettings = @(
     Description = 'Multi-monitor taskbar mode. 0 all, 1 main and active, 2 active only.'
   }
 )
+
+if ($ExportCurrentState) {
+  if ($DryRun) { Write-Log -Message '-DryRun cannot be combined with -ExportCurrentState.' -Color Red; exit 1 }
+  if ($ExportConfig) { Write-Log -Message '-ExportConfig cannot be combined with -ExportCurrentState.' -Color Red; exit 1 }
+  if ($Undo) { Write-Log -Message '-Undo cannot be combined with -ExportCurrentState.' -Color Red; exit 1 }
+  $_currentState = Export-RegistrySettingState -Settings $taskbarSettings
+  if ($PSBoundParameters.ContainsKey('ExportPath') -and -not [string]::IsNullOrWhiteSpace($ExportPath)) {
+    $_exportPath = $ExecutionContext.SessionState.Path.GetUnresolvedProviderPathFromPSPath($ExportPath)
+    $_currentState | ConvertTo-Json -Depth 3 | Out-File -FilePath $_exportPath -Encoding utf8
+    Write-Log -Message "Current taskbar settings exported to: $_exportPath" -Color Green
+  }
+  else { $_currentState | ConvertTo-Json -Depth 3 }
+  exit 0
+}
 
 if ($ExportConfig) {
   if ($DryRun) {
@@ -328,4 +346,13 @@ elseif ($anyChanges) {
 }
 else {
   Write-Log -Message "`nAll registry values were already at the desired target - nothing to do." -Color Green
+}
+$_operationResults = @(ConvertTo-RegistrySettingResult -Settings $_eligibleSettings -Undo:$Undo -DryRun:$DryRun)
+$_operationLog = Write-OperationResultLog -Results $_operationResults -ScriptName 'Configure-Taskbar'
+if ($_operationLog) {
+  Write-Log -Message "Operation log: $_operationLog" -Color Gray
+}
+
+if ($PassThru -or $DryRun) {
+  $_operationResults
 }

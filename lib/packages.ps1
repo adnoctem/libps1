@@ -85,14 +85,7 @@ function New-PackageLifecycleResult {
     [string]$ErrorMessage
   )
 
-  [PSCustomObject]@{
-    Target = $Target
-    Source = $Source
-    Action = $Action
-    Status = $Status
-    SkippedReason = $SkippedReason
-    Error = $ErrorMessage
-  }
+  New-OperationResult -Target $Target -Source $Source -Action $Action -Status $Status -SkippedReason $SkippedReason -ErrorMessage $ErrorMessage
 }
 
 function Get-InstalledProgramCount {

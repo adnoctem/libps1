@@ -2,7 +2,12 @@
 # libps1.psm1 - Module wrapper for the 'libps1' function library
 # --------------------------------------------------------------------
 
-$files = Get-ChildItem -Path $PSScriptRoot -Filter *.ps1 -File -ErrorAction SilentlyContinue
+$_common = Join-Path -Path $PSScriptRoot -ChildPath 'common.ps1'
+if (Test-Path -LiteralPath $_common) {
+  . $_common
+}
+
+$files = Get-ChildItem -Path $PSScriptRoot -Filter *.ps1 -File -ErrorAction SilentlyContinue | Where-Object { $_.Name -ne 'common.ps1' }
 
 foreach ($file in $files) {
   . $file.FullName
@@ -16,6 +21,13 @@ $publicAliases = @(
 )
 
 $publicFunctions = @(
+  # common.ps1
+  'New-OperationResult',
+  'Add-OperationResult',
+  'Write-OperationResultLog',
+  'Export-RegistrySettingState',
+  'ConvertTo-RegistrySettingResult',
+
   # data.ps1
   'Convert-Quote',
   'Merge-ObjectArrays',

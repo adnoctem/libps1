@@ -17,8 +17,12 @@
   Name and can override Preferred or Default values.
 .PARAMETER ExportConfig
   Export the default update settings JSON and exit.
+.PARAMETER ExportCurrentState
+  Export current registry values as reusable JSON config and exit.
 .PARAMETER ExportPath
   File path used with -ExportConfig.
+.PARAMETER PassThru
+  Return structured operation results.
 .EXAMPLE
   PS> ./Configure-Updates.ps1
   Applies the default Windows Update policy profile.
@@ -39,7 +43,7 @@
 #>
 
 [CmdletBinding(SupportsShouldProcess = $true)]
-param([switch]$Undo, [switch]$DryRun, [string]$Config, [switch]$ExportConfig, [string]$ExportPath)
+param([switch]$Undo, [switch]$DryRun, [string]$Config, [switch]$ExportConfig, [switch]$ExportCurrentState, [string]$ExportPath, [switch]$PassThru)
 
 # ---- Module import -----------------------------------------------------------
 $root = Split-Path (Split-Path $PSScriptRoot -Parent) -Parent
@@ -49,9 +53,11 @@ Import-Module $module -Force
 
 if ($DryRun) { $WhatIfPreference = $true; Write-Log -Message "DRY RUN - no changes will be applied`n" -Color Yellow }
 
+$results = New-Object System.Collections.ArrayList
+
 $updateSettings = @(
   @{
-    Path = 'HKU:\S-1-5-20\Software\Microsoft\Windows\CurrentVersion\DeliveryOptimization\Settings'
+    Path = 'Registry::HKEY_USERS\S-1-5-20\Software\Microsoft\Windows\CurrentVersion\DeliveryOptimization\Settings'
     Name = 'DownloadMode'
     Preferred = 0
     Default = $null
@@ -133,6 +139,20 @@ $updateSettings = @(
   }
 )
 
+if ($ExportCurrentState) {
+  if ($DryRun) { Write-Log -Message '-DryRun cannot be combined with -ExportCurrentState.' -Color Red; exit 1 }
+  if ($ExportConfig) { Write-Log -Message '-ExportConfig cannot be combined with -ExportCurrentState.' -Color Red; exit 1 }
+  if ($Undo) { Write-Log -Message '-Undo cannot be combined with -ExportCurrentState.' -Color Red; exit 1 }
+  $_currentState = Export-RegistrySettingState -Settings $updateSettings
+  if ($PSBoundParameters.ContainsKey('ExportPath') -and -not [string]::IsNullOrWhiteSpace($ExportPath)) {
+    $_exportPath = $ExecutionContext.SessionState.Path.GetUnresolvedProviderPathFromPSPath($ExportPath)
+    $_currentState | ConvertTo-Json -Depth 3 | Out-File -FilePath $_exportPath -Encoding utf8
+    Write-Log -Message "Current update settings exported to: $_exportPath" -Color Green
+  }
+  else { $_currentState | ConvertTo-Json -Depth 3 }
+  exit 0
+}
+
 if ($ExportConfig) {
   if ($DryRun) { Write-Log -Message '-DryRun cannot be combined with -ExportConfig.' -Color Red; exit 1 }
   if ($PSBoundParameters.ContainsKey('ExportPath') -and -not [string]::IsNullOrWhiteSpace($ExportPath)) {
@@ -156,23 +176,53 @@ if ($PSBoundParameters.ContainsKey('Config')) {
 }
 
 $targetLabel = if ($Undo) { 'Restoring' } else { 'Applying' }
-$anyChanges = $false
 foreach ($entry in $updateSettings) {
   $targetValue = if ($Undo) { $entry.Default } else { $entry.Preferred }
+  $target = "$($entry.Path)\$($entry.Name)"
   if ($Undo -and $null -eq $entry.Default) {
     Write-Log -Message "$targetLabel update setting: Remove '$($entry.Name)' - $($entry.Description)" -Color Yellow
-    if ($DryRun) { Write-Log -Message "  -> Would remove $($entry.Path)\$($entry.Name)" -Color Gray; continue }
+    if ($DryRun) {
+      Write-Log -Message "  -> Would remove $target" -Color Gray
+      Add-OperationResult -Results $results -Target $target -Source 'Registry' -Action 'RemoveValue' -Status 'Skipped' -Detail 'DryRun'
+      continue
+    }
     $result = Remove-RegistryValue -Path $entry.Path -Name $entry.Name
+    $action = 'RemoveValue'
   }
   else {
     Write-Log -Message "$targetLabel update setting: $($entry.Name) = '$targetValue' - $($entry.Description)" -Color Yellow
-    if ($DryRun) { Write-Log -Message "  -> Would set $($entry.Path)\$($entry.Name) = '$targetValue' ($($entry.Type))" -Color Gray; continue }
+    if ($DryRun) {
+      Write-Log -Message "  -> Would set $target = '$targetValue' ($($entry.Type))" -Color Gray
+      Add-OperationResult -Results $results -Target $target -Source 'Registry' -Action 'SetValue' -Status 'Skipped' -Detail 'DryRun'
+      continue
+    }
     $result = Set-RegistryValue -Path $entry.Path -Name $entry.Name -Value $targetValue -Type $entry.Type
+    $action = 'SetValue'
   }
-  if ($result) { Write-Log -Message "  -> $($result.Status)" -Color Gray; if ($result.Status -in @('Created', 'Updated', 'Removed')) { $anyChanges = $true } }
-  else { Write-Log -Message "  -> FAILED - could not process '$($entry.Name)'" -Color Red }
+  if ($result) {
+    Write-Log -Message "  -> $($result.Status)" -Color Gray
+    Add-OperationResult -Results $results -Target $target -Source 'Registry' -Action $action -Status $result.Status -Detail $entry.Description
+  }
+  else {
+    Write-Log -Message "  -> FAILED - could not process '$($entry.Name)'" -Color Red
+    Add-OperationResult -Results $results -Target $target -Source 'Registry' -Action $action -Status 'Failed' -Detail "Could not process '$($entry.Name)'."
+  }
 }
 
+$_changed = @($results | Where-Object { $_.Status -in @('Created', 'Updated', 'Removed') }).Count
+$_skipped = @($results | Where-Object { $_.Status -eq 'Skipped' }).Count
+$_failed = @($results | Where-Object { $_.Status -eq 'Failed' }).Count
+
 if ($DryRun) { Write-Log -Message "`nDRY RUN COMPLETE - no changes were made" -Color Yellow }
-elseif ($anyChanges) { Write-Log -Message "`nWindows Update settings have been processed." -Color Green }
+elseif ($_changed -gt 0) { Write-Log -Message "`nWindows Update settings have been processed." -Color Green }
 else { Write-Log -Message "`nAll registry values were already at the desired target - nothing to do." -Color Green }
+
+Write-Log -Message "Update settings complete. Changed: $_changed | Skipped: $_skipped | Failed: $_failed" -Color $(if ($_failed -gt 0) { 'Yellow' } else { 'Green' })
+$_operationLog = Write-OperationResultLog -Results $results -ScriptName 'Configure-Updates'
+if ($_operationLog) {
+  Write-Log -Message "Operation log: $_operationLog" -Color Gray
+}
+
+if ($PassThru -or $DryRun) {
+  $results
+}

@@ -32,6 +32,8 @@
 .PARAMETER ExportConfig
   Export the default Content Delivery settings JSON and exit.
 
+.PARAMETER ExportCurrentState
+  Export current registry values as reusable JSON config and exit.
 .PARAMETER ExportPath
   File path used with -ExportConfig. When omitted, JSON is written to stdout.
 
@@ -82,7 +84,7 @@ param (
   [switch]$ExportConfig,
 
   [Parameter(Mandatory = $false, HelpMessage = 'File path for -ExportConfig.')]
-  [string]$ExportPath
+  [string]$ExportPath, [switch]$PassThru
 )
 
 # ---- Module import -----------------------------------------------------------
@@ -96,7 +98,7 @@ if ($DryRun) {
   Write-Log -Message "DRY RUN - no changes will be applied`n" -Color Yellow
 }
 
-$regHive = if ($SysPrep) { 'HKU:\DefaultUser' } else { 'HKCU:' }
+$regHive = if ($SysPrep) { 'Registry::HKEY_USERS\DefaultUser' } else { 'HKCU:' }
 $contentDeliveryKey = "$regHive\Software\Microsoft\Windows\CurrentVersion\ContentDeliveryManager"
 $cloudContentKey = 'HKLM:\SOFTWARE\Policies\Microsoft\Windows\CloudContent'
 $windowsStorePolicyKey = 'HKLM:\SOFTWARE\Policies\Microsoft\WindowsStore'
@@ -284,6 +286,20 @@ $contentDeliverySettings = @(
   }
 )
 
+if ($ExportCurrentState) {
+  if ($DryRun) { Write-Log -Message '-DryRun cannot be combined with -ExportCurrentState.' -Color Red; exit 1 }
+  if ($ExportConfig) { Write-Log -Message '-ExportConfig cannot be combined with -ExportCurrentState.' -Color Red; exit 1 }
+  if ($Undo) { Write-Log -Message '-Undo cannot be combined with -ExportCurrentState.' -Color Red; exit 1 }
+  $_currentState = Export-RegistrySettingState -Settings $contentDeliverySettings
+  if ($PSBoundParameters.ContainsKey('ExportPath') -and -not [string]::IsNullOrWhiteSpace($ExportPath)) {
+    $_exportPath = $ExecutionContext.SessionState.Path.GetUnresolvedProviderPathFromPSPath($ExportPath)
+    $_currentState | ConvertTo-Json -Depth 3 | Out-File -FilePath $_exportPath -Encoding utf8
+    Write-Log -Message "Current content delivery settings exported to: $_exportPath" -Color Green
+  }
+  else { $_currentState | ConvertTo-Json -Depth 3 }
+  exit 0
+}
+
 if ($ExportConfig) {
   if ($DryRun) {
     Write-Log -Message '-DryRun cannot be combined with -ExportConfig.' -Color Red
@@ -380,4 +396,13 @@ elseif ($anyChanges) {
 }
 else {
   Write-Log -Message "`nAll registry values were already at the desired target - nothing to do." -Color Green
+}
+$_operationResults = @(ConvertTo-RegistrySettingResult -Settings $contentDeliverySettings -Undo:$Undo -DryRun:$DryRun)
+$_operationLog = Write-OperationResultLog -Results $_operationResults -ScriptName 'Disable-ContentDelivery'
+if ($_operationLog) {
+  Write-Log -Message "Operation log: $_operationLog" -Color Gray
+}
+
+if ($PassThru -or $DryRun) {
+  $_operationResults
 }

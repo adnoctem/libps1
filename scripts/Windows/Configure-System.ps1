@@ -21,6 +21,8 @@
   Name and can override Preferred or Default values.
 .PARAMETER ExportConfig
   Export the default system settings JSON and exit.
+.PARAMETER ExportCurrentState
+  Export current registry values as reusable JSON config and exit.
 .PARAMETER ExportPath
   File path used with -ExportConfig.
 .EXAMPLE
@@ -43,7 +45,7 @@
 #>
 
 [CmdletBinding(SupportsShouldProcess = $true)]
-param([switch]$Undo, [switch]$DryRun, [switch]$SysPrep, [string]$Config, [switch]$ExportConfig, [string]$ExportPath)
+param([switch]$Undo, [switch]$DryRun, [switch]$SysPrep, [string]$Config, [switch]$ExportConfig, [switch]$ExportCurrentState, [string]$ExportPath, [switch]$PassThru)
 
 # ---- Module import -----------------------------------------------------------
 $root = Split-Path (Split-Path $PSScriptRoot -Parent) -Parent
@@ -54,7 +56,7 @@ Import-Module $module -Force
 if ($DryRun) { $WhatIfPreference = $true; Write-Log -Message "DRY RUN - no changes will be applied`n" -Color Yellow }
 
 $currentBuild = Get-OSBuildNumber
-$regHive = if ($SysPrep) { 'HKU:\DefaultUser' } else { 'HKCU:' }
+$regHive = if ($SysPrep) { 'Registry::HKEY_USERS\DefaultUser' } else { 'HKCU:' }
 
 $systemSettings = @(
   @{
@@ -165,6 +167,20 @@ $systemSettings = @(
   }
 )
 
+if ($ExportCurrentState) {
+  if ($DryRun) { Write-Log -Message '-DryRun cannot be combined with -ExportCurrentState.' -Color Red; exit 1 }
+  if ($ExportConfig) { Write-Log -Message '-ExportConfig cannot be combined with -ExportCurrentState.' -Color Red; exit 1 }
+  if ($Undo) { Write-Log -Message '-Undo cannot be combined with -ExportCurrentState.' -Color Red; exit 1 }
+  $_currentState = Export-RegistrySettingState -Settings $systemSettings
+  if ($PSBoundParameters.ContainsKey('ExportPath') -and -not [string]::IsNullOrWhiteSpace($ExportPath)) {
+    $_exportPath = $ExecutionContext.SessionState.Path.GetUnresolvedProviderPathFromPSPath($ExportPath)
+    $_currentState | ConvertTo-Json -Depth 3 | Out-File -FilePath $_exportPath -Encoding utf8
+    Write-Log -Message "Current system settings exported to: $_exportPath" -Color Green
+  }
+  else { $_currentState | ConvertTo-Json -Depth 3 }
+  exit 0
+}
+
 if ($ExportConfig) {
   if ($DryRun) { Write-Log -Message '-DryRun cannot be combined with -ExportConfig.' -Color Red; exit 1 }
   if ($PSBoundParameters.ContainsKey('ExportPath') -and -not [string]::IsNullOrWhiteSpace($ExportPath)) {
@@ -224,3 +240,12 @@ if ($SysPrep) { $_whatIfBackup = $WhatIfPreference; $WhatIfPreference = $false; 
 if ($DryRun) { Write-Log -Message "`nDRY RUN COMPLETE - no changes were made" -Color Yellow }
 elseif ($anyChanges) { Write-Log -Message "`nSystem settings have been processed." -Color Green }
 else { Write-Log -Message "`nAll registry values were already at the desired target - nothing to do." -Color Green }
+$_operationResults = @(ConvertTo-RegistrySettingResult -Settings $systemSettings -Undo:$Undo -DryRun:$DryRun)
+$_operationLog = Write-OperationResultLog -Results $_operationResults -ScriptName 'Configure-System'
+if ($_operationLog) {
+  Write-Log -Message "Operation log: $_operationLog" -Color Gray
+}
+
+if ($PassThru -or $DryRun) {
+  $_operationResults
+}

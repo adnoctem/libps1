@@ -21,6 +21,8 @@
 
 .PARAMETER DryRun
   Preview which files would be unblocked without making changes.
+.PARAMETER PassThru
+  Return structured operation results.
 
 .EXAMPLE
   PS> ./Unblock-Files.ps1 -Path 'C:\Invoices' -Filter 'pdf'
@@ -73,7 +75,11 @@ param (
     HelpMessage = 'Preview which files would be unblocked without making changes.'
   )]
   [switch]
-  $DryRun
+  $DryRun,
+
+  [Parameter(Mandatory = $false)]
+  [switch]
+  $PassThru
 )
 
 # ---- Module import -----------------------------------------------------------
@@ -122,22 +128,26 @@ Write-Log -Message "  -> Found $($files.Count) matching file(s)." -Color Gray
 # Unblock each file
 $unblocked = 0
 $failed = 0
+$results = New-Object System.Collections.ArrayList
 
 foreach ($file in $files) {
   $relativePath = $file.FullName.Replace($Path, '').TrimStart('\')
 
   if ($DryRun) {
     Write-Log -Message "[DRY RUN] Would unblock: $relativePath" -Color Yellow
+    Add-OperationResult -Results $results -Target $file.FullName -Source 'FileSystem' -Action 'Unblock' -Status 'Skipped' -Detail 'DryRun'
     continue
   }
 
   try {
     Unblock-File -Path $file.FullName -ErrorAction Stop
     Write-Log -Message "Unblocked: $relativePath" -Color Green
+    Add-OperationResult -Results $results -Target $file.FullName -Source 'FileSystem' -Action 'Unblock' -Status 'Completed' -Detail 'Mark-of-the-Web removed.'
     $unblocked++
   }
   catch {
     Write-Log -Message "FAILED: $relativePath - $_" -Color Red
+    Add-OperationResult -Results $results -Target $file.FullName -Source 'FileSystem' -Action 'Unblock' -Status 'Failed' -Detail $_.Exception.Message
     $failed++
   }
 }
@@ -148,4 +158,13 @@ if ($DryRun) {
 }
 else {
   Write-Log -Message "`nUnblocked: $unblocked  |  Failed: $failed  |  Total matched: $($files.Count)" -Color $(if ($failed -gt 0) { 'Yellow' } else { 'Green' })
+}
+
+$_operationLog = Write-OperationResultLog -Results $results -ScriptName 'Unblock-Files'
+if ($_operationLog) {
+  Write-Log -Message "Operation log: $_operationLog" -Color Gray
+}
+
+if ($PassThru -or $DryRun) {
+  $results
 }
