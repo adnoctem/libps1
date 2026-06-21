@@ -53,14 +53,67 @@
 
 [CmdletBinding(SupportsShouldProcess = $true)]
 param (
-  [switch]$Undo,
-  [switch]$DryRun,
-  [switch]$Instant,
-  [switch]$SysPrep,
-  [string]$Config,
-  [switch]$ExportConfig,
-  [switch]$ExportCurrentState,
-  [string]$ExportPath, [switch]$PassThru
+  [Parameter(
+    Position = 0,
+    Mandatory = $false,
+    HelpMessage = 'Restore defaults or remove values managed by this script.'
+  )]
+  [switch]
+  $Undo,
+
+  [Parameter(
+    Position = 1,
+    Mandatory = $false,
+    HelpMessage = 'Preview changes without applying them.'
+  )]
+  [switch]
+  $DryRun,
+
+  [Parameter(
+    Mandatory = $false,
+    HelpMessage = 'Restart Windows Explorer after applying changes.'
+  )]
+  [switch]
+  $Instant,
+
+  [Parameter(
+    Mandatory = $false,
+    HelpMessage = 'Mount the default user profile hive and write HKCU-backed taskbar settings there.'
+  )]
+  [switch]
+  $SysPrep,
+
+  [Parameter(
+    Mandatory = $false,
+    HelpMessage = 'JSON file containing setting overrides.'
+  )]
+  [string]
+  $Config,
+
+  [Parameter(
+    Mandatory = $false,
+    HelpMessage = 'Export the default taskbar settings JSON and exit.'
+  )]
+  [switch]
+  $ExportConfig,
+
+  [Parameter(
+    Mandatory = $false,
+    HelpMessage = 'Export current registry values as reusable JSON config and exit.'
+  )]
+  [switch]
+  $ExportCurrentState,
+
+  [Parameter(
+    Mandatory = $false,
+    HelpMessage = 'File path used with -ExportConfig.'
+  )]
+  [string]
+  $ExportPath,
+
+  [Parameter(Mandatory = $false)]
+  [switch]
+  $PassThru
 )
 
 # ---- Module import -----------------------------------------------------------

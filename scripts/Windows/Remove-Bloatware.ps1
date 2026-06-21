@@ -65,20 +65,101 @@
 
 [CmdletBinding(SupportsShouldProcess = $true, ConfirmImpact = 'High')]
 param (
-  [string[]]$Group = @('Default', 'OEM'),
-  [string[]]$Pattern,
-  [string]$Config,
-  [switch]$AllUsers,
-  [switch]$SkipProvisioned,
-  [switch]$SkipWinGet,
-  [switch]$SkipSpecialProcedures,
-  [switch]$ConfigureStartPins,
-  [switch]$IncludeProtected,
-  [switch]$Force,
-  [switch]$DryRun,
-  [switch]$ExportConfig,
-  [string]$ExportPath,
-  [switch]$PassThru
+  [Parameter(
+    Position = 0,
+    Mandatory = $false,
+    HelpMessage = 'Built-in group names to remove. Defaults to Default and OEM.'
+  )]
+  [string[]]
+  $Group = @('Default', 'OEM'),
+
+  [Parameter(
+    Mandatory = $false,
+    HelpMessage = 'Additional package wildcard patterns to include.'
+  )]
+  [string[]]
+  $Pattern,
+
+  [Parameter(
+    Mandatory = $false,
+    HelpMessage = 'Optional PSD1 or JSON file with grouped package patterns.'
+  )]
+  [string]
+  $Config,
+
+  [Parameter(
+    Mandatory = $false,
+    HelpMessage = 'Remove installed packages for all users.'
+  )]
+  [switch]
+  $AllUsers,
+
+  [Parameter(
+    Mandatory = $false,
+    HelpMessage = 'Do not remove provisioned packages from the Windows image.'
+  )]
+  [switch]
+  $SkipProvisioned,
+
+  [Parameter(
+    Mandatory = $false,
+    HelpMessage = 'Skip WinGet/ARP Win32 removal targets.'
+  )]
+  [switch]
+  $SkipWinGet,
+
+  [Parameter(
+    Mandatory = $false,
+    HelpMessage = 'Skip registry, task, capability, shortcut, and policy follow-up procedures.'
+  )]
+  [switch]
+  $SkipSpecialProcedures,
+
+  [Parameter(
+    Mandatory = $false,
+    HelpMessage = 'Set the Windows 11 ConfigureStartPins CSP to an empty pinned list.'
+  )]
+  [switch]
+  $ConfigureStartPins,
+
+  [Parameter(
+    Mandatory = $false,
+    HelpMessage = 'Include packages normally protected by libps1 safety checks.'
+  )]
+  [switch]
+  $IncludeProtected,
+
+  [Parameter(
+    Mandatory = $false,
+    HelpMessage = 'Required together with -IncludeProtected to actually remove protected matches.'
+  )]
+  [switch]
+  $Force,
+
+  [Parameter(
+    Mandatory = $false,
+    HelpMessage = 'Preview matching packages and removals without changing the system.'
+  )]
+  [switch]
+  $DryRun,
+
+  [Parameter(
+    Mandatory = $false,
+    HelpMessage = 'Export the default package pattern groups as JSON and exit.'
+  )]
+  [switch]
+  $ExportConfig,
+
+  [Parameter(
+    Mandatory = $false,
+    HelpMessage = 'Output path used with -ExportConfig.'
+  )]
+  [string]
+  $ExportPath,
+
+  [Parameter(Mandatory = $false)]
+  [switch]
+  $PassThru
 )
 
 # ---- Module import -----------------------------------------------------------

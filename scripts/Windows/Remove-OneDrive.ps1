@@ -47,16 +47,73 @@
 [Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSReviewUnusedParameter', 'NoBackup', Justification = 'Used by nested known-folder migration helper through script scope.')]
 [CmdletBinding(SupportsShouldProcess = $true, ConfirmImpact = 'High')]
 param (
-  [switch]$DryRun,
-  [switch]$Instant,
-  [string]$BackupPath = (Join-Path -Path $env:USERPROFILE -ChildPath ('OneDrive-Backup-{0:yyyyMMdd-HHmmss}' -f (Get-Date))),
-  [switch]$NoBackup,
-  [switch]$MigrateKnownFolders,
-  [switch]$RemoveScheduledTasks,
-  [switch]$RemoveUserFolder,
-  [switch]$BlockReinstall,
-  [switch]$Force,
-  [switch]$PassThru
+  [Parameter(
+    Position = 0,
+    Mandatory = $false,
+    HelpMessage = 'Preview changes without applying them.'
+  )]
+  [switch]
+  $DryRun,
+
+  [Parameter(
+    Mandatory = $false,
+    HelpMessage = 'Restart Explorer after applying shell visibility changes.'
+  )]
+  [switch]
+  $Instant,
+
+  [Parameter(
+    Mandatory = $false,
+    HelpMessage = 'Destination used when -MigrateKnownFolders backs up files before moving them.'
+  )]
+  [string]
+  $BackupPath = (Join-Path -Path $env:USERPROFILE -ChildPath ('OneDrive-Backup-{0:yyyyMMdd-HHmmss}' -f (Get-Date))),
+
+  [Parameter(
+    Mandatory = $false,
+    HelpMessage = 'Skip backup creation during -MigrateKnownFolders.'
+  )]
+  [switch]
+  $NoBackup,
+
+  [Parameter(
+    Mandatory = $false,
+    HelpMessage = 'Move Desktop, Documents, and Pictures content out of the OneDrive folder.'
+  )]
+  [switch]
+  $MigrateKnownFolders,
+
+  [Parameter(
+    Mandatory = $false,
+    HelpMessage = 'Remove scheduled tasks whose task name starts with OneDrive.'
+  )]
+  [switch]
+  $RemoveScheduledTasks,
+
+  [Parameter(
+    Mandatory = $false,
+    HelpMessage = 'Remove the OneDrive folder only when it is empty.'
+  )]
+  [switch]
+  $RemoveUserFolder,
+
+  [Parameter(
+    Mandatory = $false,
+    HelpMessage = 'Apply OneDrive policy values that prevent file sync and consumer reinstall.'
+  )]
+  [switch]
+  $BlockReinstall,
+
+  [Parameter(
+    Mandatory = $false,
+    HelpMessage = 'Continue optional operations that normally require explicit confirmation.'
+  )]
+  [switch]
+  $Force,
+
+  [Parameter(Mandatory = $false)]
+  [switch]
+  $PassThru
 )
 
 # ---- Module import -----------------------------------------------------------

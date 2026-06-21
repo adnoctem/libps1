@@ -44,12 +44,45 @@
 
 [CmdletBinding(SupportsShouldProcess = $true)]
 param (
-  [switch]$EnsureInstalled,
-  [switch]$CurrentUser,
-  [switch]$AllExistingUsers,
-  [switch]$DefaultUser,
-  [switch]$DryRun,
-  [switch]$PassThru
+  [Parameter(
+    Position = 0,
+    Mandatory = $false,
+    HelpMessage = 'Install Windows Terminal through winget when it is not already installed.'
+  )]
+  [switch]
+  $EnsureInstalled,
+
+  [Parameter(
+    Mandatory = $false,
+    HelpMessage = 'Apply the setting to the current user HKCU hive.'
+  )]
+  [switch]
+  $CurrentUser,
+
+  [Parameter(
+    Mandatory = $false,
+    HelpMessage = 'Apply the setting to all loaded real user hives under HKEY_USERS.'
+  )]
+  [switch]
+  $AllExistingUsers,
+
+  [Parameter(
+    Mandatory = $false,
+    HelpMessage = 'Mount C:\Users\Default\NTUSER.DAT and apply the setting for future profiles.'
+  )]
+  [switch]
+  $DefaultUser,
+
+  [Parameter(
+    Mandatory = $false,
+    HelpMessage = 'Preview changes without applying them.'
+  )]
+  [switch]
+  $DryRun,
+
+  [Parameter(Mandatory = $false)]
+  [switch]
+  $PassThru
 )
 
 # ---- Module import -----------------------------------------------------------

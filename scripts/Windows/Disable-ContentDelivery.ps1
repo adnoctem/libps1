@@ -68,23 +68,60 @@
 
 [CmdletBinding(SupportsShouldProcess = $true)]
 param (
-  [Parameter(Position = 0, Mandatory = $false, HelpMessage = 'Remove Content Delivery values managed by this script.')]
-  [switch]$Undo,
+  [Parameter(
+    Position = 0,
+    Mandatory = $false,
+    HelpMessage = 'Remove Content Delivery values managed by this script.'
+  )]
+  [switch]
+  $Undo,
 
-  [Parameter(Position = 1, Mandatory = $false, HelpMessage = 'Preview changes without applying them.')]
-  [switch]$DryRun,
+  [Parameter(
+    Position = 1,
+    Mandatory = $false,
+    HelpMessage = 'Preview changes without applying them.'
+  )]
+  [switch]
+  $DryRun,
 
-  [Parameter(Mandatory = $false, HelpMessage = 'Write HKCU-backed settings to the default user profile hive.')]
-  [switch]$SysPrep,
+  [Parameter(
+    Mandatory = $false,
+    HelpMessage = 'Mount the default user profile hive and write HKCU-backed Content Delivery values there.'
+  )]
+  [switch]
+  $SysPrep,
 
-  [Parameter(Mandatory = $false, HelpMessage = 'Path to a JSON config file that overrides individual settings.')]
-  [string]$Config,
+  [Parameter(
+    Mandatory = $false,
+    HelpMessage = 'JSON file containing setting overrides.'
+  )]
+  [string]
+  $Config,
 
-  [Parameter(Mandatory = $false, HelpMessage = 'Export the default settings to stdout or -ExportPath.')]
-  [switch]$ExportConfig,
+  [Parameter(
+    Mandatory = $false,
+    HelpMessage = 'Export the default Content Delivery settings JSON and exit.'
+  )]
+  [switch]
+  $ExportConfig,
 
-  [Parameter(Mandatory = $false, HelpMessage = 'File path for -ExportConfig.')]
-  [string]$ExportPath, [switch]$PassThru
+  [Parameter(
+    Mandatory = $false,
+    HelpMessage = 'Export current registry values as reusable JSON config and exit.'
+  )]
+  [switch]
+  $ExportCurrentState,
+
+  [Parameter(
+    Mandatory = $false,
+    HelpMessage = 'File path used with -ExportConfig.'
+  )]
+  [string]
+  $ExportPath,
+
+  [Parameter(Mandatory = $false)]
+  [switch]
+  $PassThru
 )
 
 # ---- Module import -----------------------------------------------------------
