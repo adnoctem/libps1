@@ -32,9 +32,6 @@ $publicFunctions = @(
   'Convert-Quote',
   'Merge-ObjectArrays',
 
-  # host.ps1
-  'Show-HostName',
-
   # log.ps1
   'Show-Color',
   'Write-Log',
@@ -76,14 +73,6 @@ $publicFunctions = @(
   'Update-Win32ProgramFromWinGet',
   'Uninstall-Win32ProgramFromWinGet',
 
-  # path.ps1
-  'Test-PathExists',
-  'Get-BasePath',
-  'Get-LogPath',
-  'Get-DataPath',
-  'Get-TemporaryPath',
-  'Get-NewPath',
-
   # permissions.ps1
   'Request-AdministratorPrivilege',
   'Read-ProcessElevation',
@@ -102,17 +91,23 @@ $publicFunctions = @(
   'Get-RegistryValueKind',
   'Mount-DefaultUserHive',
   'Dismount-DefaultUserHive',
+  'Export-RegistryKey',
+  'Search-RegistryKey',
 
   # security.ps1
   'Get-DefenderThreatDetection',
   'Get-DefenderThreat',
   'Get-DefenderThreatDescriptionURL',
   'Find-NewlyWrittenObject',
+  'Invoke-SafeProcess',
+  'Export-EventLog',
+  'Get-ScheduledTaskAction',
+  'Get-WMIPersistence',
 
   # settings.ps1
   'Get-DefaultApp',
 
-  # sysinfo.ps1
+  # system.ps1
   'Get-OSBuildNumber',
   'Get-OSDisplayVersion',
   'Get-OSEdition',
@@ -123,10 +118,30 @@ $publicFunctions = @(
   'Get-Hostname',
   'Get-SystemUptime',
   'Get-SystemInfo',
+  'Get-SystemPaths',
 
   # user.ps1
   'Get-UserInfo',
-  'Get-UserSID'
+  'Get-UserSID',
+
+  # policies.ps1
+  'Resolve-LGPOSource',
+  'Test-LGPOSourceAvailability',
+  'Install-LGPO',
+  'Test-LGPOInstalled',
+  'Invoke-LGPO',
+
+  # updates.ps1
+  'Test-PSWindowsUpdateAvailable',
+  'Get-WindowsUpdate',
+  'Install-WindowsUpdate',
+  'Hide-WindowsUpdate',
+  'Get-WindowsUpdateHistory',
+  'Uninstall-WindowsUpdate',
+  'Test-WindowsUpdateRebootRequired',
+  'Get-WindowsUpdateConfiguration',
+  'Get-MSStoreUpdate',
+  'Install-MSStoreUpdate'
 )
 
 Export-ModuleMember -Function $publicFunctions -Alias $publicAliases

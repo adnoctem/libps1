@@ -282,3 +282,254 @@ function Find-NewlyWrittenObject {
     $items | Format-Table -AutoSize
   }
 }
+
+function Invoke-SafeProcess {
+  <#
+    .SYNOPSIS
+      Runs an external executable and captures stdout/stderr to a file or the pipeline.
+    .DESCRIPTION
+      Uses System.Diagnostics.Process to invoke an executable with argument list
+      and redirects standard output and standard error. The combined output is
+      written to -OutputPath. Use -PassThru to return the output as a string
+      instead of writing to disk.
+
+      Designed for IR/forensics collection where external tools (reg.exe,
+      wevtutil.exe, systeminfo.exe, etc.) need to be called safely and their
+      output captured without risking interactive prompts or policy blocks.
+    .PARAMETER FilePath
+      Executable path (resolved from PATH when a bare name is supplied).
+    .PARAMETER ArgumentList
+      Array of arguments. Each element is one argument token.
+    .PARAMETER OutputPath
+      File to write combined stdout + stderr to. When omitted and -PassThru is
+      not supplied, output is discarded.
+    .PARAMETER PassThru
+      Return stdout as a string. When combined with -OutputPath, output is
+      both written to disk and returned.
+    .EXAMPLE
+      PS> Invoke-SafeProcess -FilePath 'whoami.exe' -ArgumentList @('/all') -OutputPath '.\whoami.txt'
+    .EXAMPLE
+      PS> Invoke-SafeProcess -FilePath 'systeminfo.exe' -PassThru
+    .LINK
+      https://github.com/adnoctem/libps1/lib/security.ps1
+    .NOTES
+      Author: Maximilian Gindorfer <info@mvprowess.com>
+      License: MIT
+  #>
+
+  [CmdletBinding()]
+  [OutputType([string])]
+  param (
+    [Parameter(Mandatory = $true)]
+    [string]
+    $FilePath,
+
+    [Parameter(Mandatory = $false)]
+    [string[]]
+    $ArgumentList,
+
+    [Parameter(Mandatory = $false)]
+    [string]
+    $OutputPath,
+
+    [Parameter(Mandatory = $false)]
+    [switch]
+    $PassThru
+  )
+
+  try {
+    $psi = New-Object System.Diagnostics.ProcessStartInfo
+    $psi.FileName = $FilePath
+    if ($ArgumentList) {
+      foreach ($arg in $ArgumentList) {
+        [void]$psi.ArgumentList.Add($arg)
+      }
+    }
+    $psi.RedirectStandardOutput = $true
+    $psi.RedirectStandardError = $true
+    $psi.UseShellExecute = $false
+    $psi.CreateNoWindow = $true
+
+    $p = New-Object System.Diagnostics.Process
+    $p.StartInfo = $psi
+    [void]$p.Start()
+    $stdout = $p.StandardOutput.ReadToEnd()
+    $stderr = $p.StandardError.ReadToEnd()
+    $p.WaitForExit()
+
+    $content = @()
+    if (-not [string]::IsNullOrWhiteSpace($stdout)) { $content += $stdout }
+    if (-not [string]::IsNullOrWhiteSpace($stderr)) {
+      $content += "`r`n--- STDERR ---`r`n$stderr"
+    }
+    $content += "`r`n--- EXITCODE: $($p.ExitCode) ---`r`n"
+
+    $result = $content -join ''
+
+    if ($OutputPath) {
+      $result | Out-File -LiteralPath $OutputPath -Encoding UTF8
+    }
+
+    if ($PassThru) {
+      return $result
+    }
+  }
+  catch {
+    $errorMessage = "ERROR running $FilePath $($ArgumentList -join ' '): $($_.Exception.Message)"
+    if ($OutputPath) {
+      $errorMessage | Out-File -LiteralPath $OutputPath -Encoding UTF8
+    }
+    if ($PassThru) {
+      return $errorMessage
+    }
+    Write-Error $errorMessage
+  }
+}
+
+function Export-EventLog {
+  <#
+    .SYNOPSIS
+      Exports a named Windows event log to an .evtx file via wevtutil.
+    .DESCRIPTION
+      Wraps wevtutil.exe epl. If the log name does not exist, a warning
+      is recorded in -MissingLogPath (when supplied) and no error is thrown.
+      Designed for bulk log collection during IR triage.
+    .PARAMETER LogName
+      Full event log name, e.g. 'Security', 'Microsoft-Windows-PowerShell/Operational'.
+    .PARAMETER OutputPath
+      Path for the exported .evtx file.
+    .PARAMETER MissingLogPath
+      When supplied and the log is not found, the missing log name is appended
+      to this text file so collectors can report what was unavailable.
+    .EXAMPLE
+      PS> Export-EventLog -LogName 'Security' -OutputPath '.\EVTX\Security.evtx'
+    .LINK
+      https://github.com/adnoctem/libps1/lib/security.ps1
+    .NOTES
+      Author: Maximilian Gindorfer <info@mvprowess.com>
+      License: MIT
+  #>
+
+  [CmdletBinding()]
+  param (
+    [Parameter(Mandatory = $true)]
+    [string]
+    $LogName,
+
+    [Parameter(Mandatory = $true)]
+    [string]
+    $OutputPath,
+
+    [Parameter(Mandatory = $false)]
+    [string]
+    $MissingLogPath
+  )
+
+  try {
+    $result = Invoke-SafeProcess -FilePath 'wevtutil.exe' -ArgumentList @('el') -PassThru
+    $exists = $result -split "`r`n" | Where-Object { $_ -eq $LogName }
+
+    if (-not $exists) {
+      if ($MissingLogPath) {
+        "Log not present: $LogName" | Out-File -LiteralPath $MissingLogPath -Append -Encoding UTF8
+      }
+      Write-Verbose "Event log not found: $LogName"
+      return $false
+    }
+
+    $null = Invoke-SafeProcess -FilePath 'wevtutil.exe' -ArgumentList @('epl', $LogName, $OutputPath)
+    return $true
+  }
+  catch {
+    Write-Error "Failed to export event log '$LogName': $_"
+    return $false
+  }
+}
+
+function Get-ScheduledTaskAction {
+  <#
+    .SYNOPSIS
+      Returns structured scheduled task action data for all registered tasks.
+    .DESCRIPTION
+      Enumerates every scheduled task via Get-ScheduledTask and expands each
+      task's Actions collection into a flat list of [PSCustomObject] records
+      with TaskName, TaskPath, State, Execute, and Arguments properties.
+      Use -SuspiciousOnly to filter to known execution-host paths (powershell,
+      cmd, wscript, cscript, mshta, rundll32, regsvr32, InstallUtil).
+    .PARAMETER SuspiciousOnly
+      Only return actions with an Execute path matching common scripting and
+      LOLBin hosts.
+    .EXAMPLE
+      PS> Get-ScheduledTaskAction | Export-Csv .\ScheduledTasks-Actions.csv -NoTypeInformation
+    .EXAMPLE
+      PS> Get-ScheduledTaskAction -SuspiciousOnly
+    .LINK
+      https://github.com/adnoctem/libps1/lib/security.ps1
+    .NOTES
+      Author: Maximilian Gindorfer <info@mvprowess.com>
+      License: MIT
+  #>
+
+  [CmdletBinding()]
+  [OutputType([PSCustomObject[]])]
+  param (
+    [Parameter(Mandatory = $false)]
+    [switch]
+    $SuspiciousOnly
+  )
+
+  $suspiciousHosts = 'powershell|pwsh|cmd|wscript|cscript|mshta|rundll32|regsvr32|InstallUtil'
+
+  $rows = Get-ScheduledTask -ErrorAction SilentlyContinue |
+    ForEach-Object {
+      $task = $_
+      foreach ($action in $task.Actions) {
+        $obj = [PSCustomObject]@{
+          TaskName = $task.TaskName
+          TaskPath = $task.TaskPath
+          State = $task.State
+          Execute = $action.Execute
+          Arguments = $action.Arguments
+        }
+        if ($SuspiciousOnly) {
+          if ($obj.Execute -match $suspiciousHosts) { $obj }
+        }
+        else {
+          $obj
+        }
+      }
+    }
+
+  $rows | Sort-Object TaskPath, TaskName
+}
+
+function Get-WMIPersistence {
+  <#
+    .SYNOPSIS
+      Enumerates WMI subscription-based persistence.
+    .DESCRIPTION
+      Queries the root\subscription namespace for __EventFilter,
+      CommandLineEventConsumer, and __FilterToConsumerBinding instances.
+      Returns an object with three properties: EventFilters, CommandLineConsumers,
+      and Bindings, each an array of the corresponding WMI objects.
+      Returns $null when no subscriptions exist.
+    .EXAMPLE
+      PS> $wmi = Get-WMIPersistence
+      PS> $wmi.EventFilters | Format-List
+    .LINK
+      https://github.com/adnoctem/libps1/lib/security.ps1
+    .NOTES
+      Author: Maximilian Gindorfer <info@mvprowess.com>
+      License: MIT
+  #>
+
+  [CmdletBinding()]
+  [OutputType([PSCustomObject])]
+  param()
+
+  [PSCustomObject]@{
+    EventFilters = @(Get-CimInstance -Namespace root\subscription -ClassName __EventFilter -ErrorAction SilentlyContinue)
+    CommandLineConsumers = @(Get-CimInstance -Namespace root\subscription -ClassName CommandLineEventConsumer -ErrorAction SilentlyContinue)
+    Bindings = @(Get-CimInstance -Namespace root\subscription -ClassName __FilterToConsumerBinding -ErrorAction SilentlyContinue)
+  }
+}

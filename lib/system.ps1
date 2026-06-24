@@ -482,3 +482,43 @@ function Get-SystemInfo {
     InstallDate = $_os.InstallDate
   }
 }
+
+function Get-SystemPaths {
+  <#
+    .SYNOPSIS
+      Returns standard libps1 directory paths for tools, config, cache, data, and logs.
+    .DESCRIPTION
+      Provides a single structured lookup for the five canonical libps1 folders.
+      The -Name parameter controls the subdirectory name used under each root.
+      Defaults to 'libps1' so callers can omit it for standard usage.
+    .PARAMETER Name
+      Subdirectory name under each root. Defaults to 'libps1'.
+    .EXAMPLE
+      PS> $paths = Get-SystemPaths
+      PS> $paths.Data
+      C:\ProgramData\libps1
+    .EXAMPLE
+      PS> Get-SystemPaths -Name 'myapp' | Format-List
+    .LINK
+      https://github.com/adnoctem/libps1/lib/system.ps1
+    .NOTES
+      Author: Maximilian Gindorfer <info@mvprowess.com>
+      License: MIT
+  #>
+
+  [OutputType([PSCustomObject])]
+  [CmdletBinding()]
+  param(
+    [Parameter(Mandatory = $false)]
+    [string]
+    $Name = 'libps1'
+  )
+
+  return [PSCustomObject]@{
+    Home = Join-Path -Path $env:USERPROFILE -ChildPath $Name
+    Config = Join-Path -Path $env:APPDATA -ChildPath $Name
+    Cache = Join-Path -Path $env:LOCALAPPDATA -ChildPath $Name
+    Data = Join-Path -Path $env:ProgramData -ChildPath $Name
+    Logs = Join-Path -Path $env:LOCALAPPDATA -ChildPath "$Name\logs"
+  }
+}

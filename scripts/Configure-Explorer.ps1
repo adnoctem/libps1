@@ -736,6 +736,50 @@ $explorerSettings = @(
     Type = 'DWord'
     Description = 'Always search file names and contents: OFF'
   }
+
+  # -- Navigation pane: context menu entries --
+  @{
+    Path = 'HKLM:\Software\Microsoft\Windows\CurrentVersion\Shell Extensions\Blocked'
+    Name = '{e2bf9676-5f8f-435c-97eb-11607a5bedf7}'
+    Preferred = ''
+    Default = $null
+    Type = 'String'
+    Description = 'Remove "Share" from the context menu (Win10/Win11).'
+  }
+  @{
+    Path = 'HKCU:\Software\Classes\CLSID\{e2bf9676-5f8f-435c-97eb-11607a5bedf7}'
+    Name = 'System.IsPinnedToNameSpaceTree'
+    Preferred = 0
+    Default = $null
+    Type = 'DWord'
+    Description = 'Hide Share entry from navigation pane.'
+  }
+  @{
+    Path = 'HKLM:\Software\Microsoft\Windows\CurrentVersion\Shell Extensions\Blocked'
+    Name = '{3e22fe5c-40ed-41f4-b551-9c6a7b5b2e07}'
+    Preferred = ''
+    Default = $null
+    Type = 'String'
+    Description = 'Remove "Include in library" from the context menu.'
+  }
+  @{
+    Path = 'HKLM:\Software\Microsoft\Windows\CurrentVersion\Shell Extensions\Blocked'
+    Name = '{F81E9010-6EA4-11CE-A7FF-00AA003CA9F6}'
+    Preferred = ''
+    Default = $null
+    Type = 'String'
+    Description = 'Remove "Give access to" from the context menu.'
+  }
+
+  # -- Duplicate drive visibility --
+  @{
+    Path = "$classesKey\CLSID\{F5FB2C77-0E2F-4A16-A381-3E560C68BC83}"
+    Name = 'System.IsPinnedToNameSpaceTree'
+    Preferred = 0
+    Default = $null
+    Type = 'DWord'
+    Description = 'Hide duplicate removable drives from navigation pane.'
+  }
 )
 
 # -- Export config (print to console or write to disk and exit) ----------

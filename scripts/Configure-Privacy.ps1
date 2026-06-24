@@ -395,6 +395,71 @@ $privacySettings = @(
     Group = 'AppBackground'
     Description = 'Deny default background app access.'
   }
+
+  # -- Legacy privacy toggles --
+  @{
+    Path = 'HKCU:\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced'
+    Name = 'DisallowRunExecutionFromZipFile'
+    Preferred = 1
+    Default = 0
+    Type = 'DWord'
+    Group = 'LegacyPrivacy'
+    Description = 'Disallow running executables directly from ZIP files.'
+  }
+  @{
+    Path = 'HKCU:\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced'
+    Name = 'DisallowRunExecutionFromZipFile\Unblock'
+    Preferred = 1
+    Default = 0
+    Type = 'DWord'
+    Group = 'LegacyPrivacy'
+    Description = 'Disallow unblocking ZIP-executed files via Mark-of-the-Web removal.'
+  }
+  @{
+    Path = 'HKCU:\Software\Microsoft\MediaPlayer\Preferences'
+    Name = 'UsageTracking'
+    Preferred = 0
+    Default = 1
+    Type = 'DWord'
+    Group = 'LegacyPrivacy'
+    Description = 'Disable Windows Media Player usage tracking.'
+  }
+  @{
+    Path = 'HKLM:\Software\Policies\Microsoft\WindowsMediaDRM'
+    Name = 'DisableOnline'
+    Preferred = 1
+    Default = $null
+    Type = 'DWord'
+    Group = 'LegacyPrivacy'
+    Description = 'Disable WMDRM online feature access.'
+  }
+  @{
+    Path = 'HKCU:\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced'
+    Name = 'EnableBalloonTips'
+    Preferred = 0
+    Default = 1
+    Type = 'DWord'
+    Group = 'LegacyPrivacy'
+    Description = 'Disable balloon tip notifications.'
+  }
+  @{
+    Path = 'HKLM:\Software\Policies\Microsoft\Windows\System'
+    Name = 'DisableCredUI'
+    Preferred = 1
+    Default = $null
+    Type = 'DWord'
+    Group = 'LegacyPrivacy'
+    Description = 'Disable credential password reveal UI.'
+  }
+  @{
+    Path = 'HKLM:\Software\Policies\Microsoft\Windows\FindMyDevice'
+    Name = 'AllowFindMyDevice'
+    Preferred = 0
+    Default = $null
+    Type = 'DWord'
+    Group = 'LegacyPrivacy'
+    Description = 'Disable Find My Device feature.'
+  }
 )
 
 if ($ExportCurrentState) {

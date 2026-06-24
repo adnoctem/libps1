@@ -1,0 +1,38 @@
+; Version: 2026-06-14-01
+; Title: Telemetry and diagnostic data restraint
+; Owner: <role-or-name>
+; Justification: Reduces Windows Diagnostic Data collection. Supports
+;   ISO 27001 A.5.34 (privacy and protection of PII) and A.8.16
+;   (monitoring activities — data minimisation).
+; ADMX: DataCollection.admx, policy AllowTelemetry
+; Upstream: https://learn.microsoft.com/en-us/windows/privacy/configure-windows-diagnostic-data-in-your-organization
+
+; Set Windows Diagnostic Data to Security level only
+Computer
+Software\Policies\Microsoft\Windows\DataCollection
+AllowTelemetry
+DWORD:0
+
+; Block sending of additional diagnostic data
+Computer
+Software\Policies\Microsoft\Windows\DataCollection
+DoNotShowFeedbackNotifications
+DWORD:1
+
+; Disable telemetry-related ETW autologgers
+Computer
+Software\Policies\Microsoft\Windows\DataCollection
+AllowDeviceNameInTelemetry
+DWORD:0
+
+; Per-user feedback frequency — never prompt
+User
+Software\Microsoft\Siuf\Rules
+NumberOfSIUFInPeriod
+DWORD:0
+
+; Per-user — disable advertising ID
+User
+Software\Microsoft\Windows\CurrentVersion\AdvertisingInfo
+Enabled
+DWORD:0

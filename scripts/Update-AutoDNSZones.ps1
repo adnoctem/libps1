@@ -207,11 +207,15 @@ function Get-AutoDNSDomainList {
 }
 
 function Update-AutoDNSDomain {
-  [CmdletBinding()]
+  [CmdletBinding(SupportsShouldProcess = $true)]
   param(
     [string]$Name,
     [object]$Body
   )
+
+  if (-not $PSCmdlet.ShouldProcess($Name, 'Update domain via AutoDNS API')) {
+    return
+  }
 
   $response = Invoke-AutoDNSRequest -Path "/domain/$Name" -Method PUT -Body $Body
 
@@ -237,19 +241,31 @@ function Compare-ZoneState {
   $currentMain = if ($Current.main) { $Current.main.address } else { $null }
   $desiredMain = if ($Desired.main) { $Desired.main.address } else { $null }
   if ($desiredMain -and $currentMain -ne $desiredMain) {
-    $changes += @{ Field = 'main'; Current = $currentMain; Desired = $desiredMain }
+    $changes += @{
+      Field = 'main'
+      Current = $currentMain
+      Desired = $desiredMain
+    }
   }
 
   $currentWww = if ($Current.PSObject.Properties.Name -contains 'wwwInclude') { [bool]$Current.wwwInclude } else { $null }
   $desiredWww = if ($Desired.PSObject.Properties.Name -contains 'wwwInclude') { $Desired.wwwInclude } else { $null }
   if ($null -ne $desiredWww -and $currentWww -ne $desiredWww) {
-    $changes += @{ Field = 'wwwInclude'; Current = $currentWww; Desired = $desiredWww }
+    $changes += @{
+      Field = 'wwwInclude'
+      Current = $currentWww
+      Desired = $desiredWww
+    }
   }
 
   $currentDnssec = if ($Current.PSObject.Properties.Name -contains 'dnssec') { [bool]$Current.dnssec } else { $null }
   $desiredDnssec = if ($Desired.PSObject.Properties.Name -contains 'dnssec') { $Desired.dnssec } else { $null }
   if ($null -ne $desiredDnssec -and $currentDnssec -ne $desiredDnssec) {
-    $changes += @{ Field = 'zone dnssec'; Current = $currentDnssec; Desired = $desiredDnssec }
+    $changes += @{
+      Field = 'zone dnssec'
+      Current = $currentDnssec
+      Desired = $desiredDnssec
+    }
   }
 
   $currentRecords = if ($Current.resourceRecords) { $Current.resourceRecords } else { @() }
@@ -284,7 +300,11 @@ function Compare-DomainState {
     if (-not $nsMatch) {
       $currentNsNames = ($currentNs | ForEach-Object { $_.name }) -join ', '
       $desiredNsNames = ($Desired.nameServers | ForEach-Object { $_.name }) -join ', '
-      $changes += @{ Field = 'nameServers'; Current = $currentNsNames; Desired = $desiredNsNames }
+      $changes += @{
+        Field = 'nameServers'
+        Current = $currentNsNames
+        Desired = $desiredNsNames
+      }
     }
   }
 
@@ -295,14 +315,22 @@ function Compare-DomainState {
       $currentVal = if ($Current.PSObject.Properties.Name -contains 'dnssec') { [bool]$Current.dnssec } else { $false }
       $desiredVal = [bool]$dnssecCfg.enabled
       if ($currentVal -ne $desiredVal) {
-        $changes += @{ Field = 'dnssec enabled'; Current = $currentVal; Desired = $desiredVal }
+        $changes += @{
+          Field = 'dnssec enabled'
+          Current = $currentVal
+          Desired = $desiredVal
+        }
       }
     }
     if ($dnssecCfg.PSObject.Properties.Name -contains 'auto') {
       $currentVal = if ($Current.PSObject.Properties.Name -contains 'autoDnssec') { [bool]$Current.autoDnssec } else { $false }
       $desiredVal = [bool]$dnssecCfg.auto
       if ($currentVal -ne $desiredVal) {
-        $changes += @{ Field = 'dnssec auto'; Current = $currentVal; Desired = $desiredVal }
+        $changes += @{
+          Field = 'dnssec auto'
+          Current = $currentVal
+          Desired = $desiredVal
+        }
       }
     }
     if ($dnssecCfg.PSObject.Properties.Name -contains 'keys') {
@@ -319,11 +347,19 @@ function Compare-DomainState {
         }
       }
       if (-not $keysMatch) {
-        $changes += @{ Field = 'dnssec keys'; Current = "($($currentKeys.Count) key(s))"; Desired = "($($desiredKeys.Count) key(s))" }
+        $changes += @{
+          Field = 'dnssec keys'
+          Current = "($($currentKeys.Count) key(s))"
+          Desired = "($($desiredKeys.Count) key(s))"
+        }
       }
     }
     if ($dnssecCfg.PSObject.Properties.Name -contains 'keyRollover' -and [bool]$dnssecCfg.keyRollover) {
-      $changes += @{ Field = 'dnssec key rollover'; Current = 'inactive'; Desired = 'triggered' }
+      $changes += @{
+        Field = 'dnssec key rollover'
+        Current = 'inactive'
+        Desired = 'triggered'
+      }
     }
   }
 
@@ -415,18 +451,49 @@ $exampleConfig = @(
         enabled = $true
         auto = $false
         keys = @(
-          [PSCustomObject]@{ algorithm = 13; flags = 257; protocol = 3; publicKey = 'base64-ksk-key' }
-          [PSCustomObject]@{ algorithm = 13; flags = 256; protocol = 3; publicKey = 'base64-zsk-key' }
+          [PSCustomObject]@{
+            algorithm = 13
+            flags = 257
+            protocol = 3
+            publicKey = 'base64-ksk-key'
+          }
+          [PSCustomObject]@{
+            algorithm = 13
+            flags = 256
+            protocol = 3
+            publicKey = 'base64-zsk-key'
+          }
         )
         keyRollover = $false
       }
     }
     wwwInclude = $true
     records = @(
-      [PSCustomObject]@{ name = '@'; type = 'A'; value = '203.0.113.10'; ttl = 3600 }
-      [PSCustomObject]@{ name = 'www'; type = 'A'; value = '203.0.113.10'; ttl = 3600 }
-      [PSCustomObject]@{ name = 'mail'; type = 'MX'; value = 'mail.example.com'; pref = 10; ttl = 3600 }
-      [PSCustomObject]@{ name = '@'; type = 'TXT'; value = 'v=spf1 mx ~all'; ttl = 3600 }
+      [PSCustomObject]@{
+        name = '@'
+        type = 'A'
+        value = '203.0.113.10'
+        ttl = 3600
+      }
+      [PSCustomObject]@{
+        name = 'www'
+        type = 'A'
+        value = '203.0.113.10'
+        ttl = 3600
+      }
+      [PSCustomObject]@{
+        name = 'mail'
+        type = 'MX'
+        value = 'mail.example.com'
+        pref = 10
+        ttl = 3600
+      }
+      [PSCustomObject]@{
+        name = '@'
+        type = 'TXT'
+        value = 'v=spf1 mx ~all'
+        ttl = 3600
+      }
     )
   }
 )
@@ -923,7 +990,11 @@ NOTE: Key rollover is an asynchronous process. Monitor the AutoDNS Web UI
 
     if ($DryRun) {
       Write-Log -Message "  [DRY RUN] Would update zone '$origin' on $vns" -Color Yellow
-      $results += @{ Origin = $origin; Status = 'DryRun'; Changes = $plan.ZoneChanges }
+      $results += @{
+        Origin = $origin
+        Status = 'DryRun'
+        Changes = $plan.ZoneChanges
+      }
       continue
     }
 
@@ -931,11 +1002,19 @@ NOTE: Key rollover is an asynchronous process. Monitor the AutoDNS Web UI
       Invoke-AutoDNSRequest -Path "/zone/$origin/$vns" -Method PUT -Body $putBody
       Write-Log -Message "  -> Zone '$origin' updated successfully." -Color Green
       $appliedCount++
-      $results += @{ Origin = $origin; Status = 'Updated'; Changes = $plan.ZoneChanges }
+      $results += @{
+        Origin = $origin
+        Status = 'Updated'
+        Changes = $plan.ZoneChanges
+      }
     }
     catch {
       Write-Log -Message "  -> Failed to update zone '$origin': $_" -Color Red
-      $results += @{ Origin = $origin; Status = 'Failed'; Error = $_ }
+      $results += @{
+        Origin = $origin
+        Status = 'Failed'
+        Error = $_
+      }
       continue
     }
 

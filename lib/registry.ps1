@@ -946,3 +946,92 @@ function Dismount-DefaultUserHive {
   }
   Write-Log -Message "Unloaded HKEY_USERS\$MountName on retry." -Color Green
 }
+
+function Export-RegistryKey {
+  <#
+    .SYNOPSIS
+      Exports a registry key to a .reg text file via reg.exe.
+    .DESCRIPTION
+      Calls reg.exe export /y against the supplied key. Uses Invoke-SafeProcess
+      internally so stdout/stderr are captured.
+    .PARAMETER Key
+      Registry key path, e.g. 'HKLM\Software\Microsoft\Windows\CurrentVersion\Run'.
+    .PARAMETER OutputPath
+      Path for the exported .reg file.
+    .EXAMPLE
+      PS> Export-RegistryKey -Key 'HKLM\Software\Microsoft\Windows\CurrentVersion\Run' -OutputPath '.\HKLM-Run.reg'
+    .LINK
+      https://github.com/adnoctem/libps1/lib/registry.ps1
+    .NOTES
+      Author: Maximilian Gindorfer <info@mvprowess.com>
+      License: MIT
+  #>
+
+  [CmdletBinding()]
+  param (
+    [Parameter(Mandatory = $true)]
+    [string]
+    $Key,
+
+    [Parameter(Mandatory = $true)]
+    [string]
+    $OutputPath
+  )
+
+  try {
+    $null = Invoke-SafeProcess -FilePath 'reg.exe' -ArgumentList @('export', $Key, $OutputPath, '/y')
+    return $true
+  }
+  catch {
+    Write-Error "Failed to export registry key '$Key': $_"
+    return $false
+  }
+}
+
+function Search-RegistryKey {
+  <#
+    .SYNOPSIS
+      Searches a registry hive for a pattern via reg.exe query.
+    .DESCRIPTION
+      Calls reg.exe query <Root> /f <Pattern> /s to recursively search for a
+      string or pattern across a registry hive. Output is written to -OutputPath.
+      Uses Invoke-SafeProcess internally.
+    .PARAMETER Root
+      Registry hive root, e.g. 'HKLM', 'HKCU'.
+    .PARAMETER Pattern
+      Search pattern forwarded to /f.
+    .PARAMETER OutputPath
+      File to write the search results to.
+    .EXAMPLE
+      PS> Search-RegistryKey -Root 'HKLM' -Pattern 'InstallUtil' -OutputPath '.\Reg-HKLM-InstallUtil.txt'
+    .LINK
+      https://github.com/adnoctem/libps1/lib/registry.ps1
+    .NOTES
+      Author: Maximilian Gindorfer <info@mvprowess.com>
+      License: MIT
+  #>
+
+  [CmdletBinding()]
+  param (
+    [Parameter(Mandatory = $true)]
+    [string]
+    $Root,
+
+    [Parameter(Mandatory = $true)]
+    [string]
+    $Pattern,
+
+    [Parameter(Mandatory = $true)]
+    [string]
+    $OutputPath
+  )
+
+  try {
+    $null = Invoke-SafeProcess -FilePath 'reg.exe' -ArgumentList @('query', $Root, '/f', $Pattern, '/s') -OutputPath $OutputPath
+    return $true
+  }
+  catch {
+    Write-Error "Failed to search registry '$Root' for pattern '$Pattern': $_"
+    return $false
+  }
+}
