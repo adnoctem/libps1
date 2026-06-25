@@ -4,7 +4,7 @@
 .SYNOPSIS
   Configures Start menu and Windows Search integration settings.
 .DESCRIPTION
-  Applies Start menu and Search policy/preference values using libps1 registry
+  Applies Start menu and Search policy/preference values using winkit registry
   helpers. This includes recommended content, Phone Link integration, Bing/web
   search, local search history, and search highlights. Build-gated settings are
   skipped automatically when the running Windows build does not support them.
@@ -40,7 +40,7 @@
   PS> ./Configure-StartMenu.ps1 -ExportConfig -ExportPath '.\start-menu.json'
   Exports the default Start menu settings template.
 .LINK
-  https://github.com/adnoctem/libps1
+  https://github.com/adnoctem/winkit
 .NOTES
   Author: Maximilian Gindorfer <info@mvprowess.com>
   License: MIT
@@ -106,7 +106,7 @@ param (
 
 # ---- Module import -----------------------------------------------------------
 $root = Split-Path (Split-Path $PSScriptRoot -Parent) -Parent
-$module = Join-Path $root 'lib/libps1.psm1'
+$module = Join-Path $root 'lib/winkit.psm1'
 Import-Module $module -Force
 # -----------------------------------------------------------------------------
 

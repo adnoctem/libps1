@@ -4,7 +4,7 @@
 .SYNOPSIS
   Configures Windows taskbar layout, buttons, search, widgets, and behavior.
 .DESCRIPTION
-  Applies a curated taskbar profile using libps1 registry helpers. The exported
+  Applies a curated taskbar profile using winkit registry helpers. The exported
   JSON profile represents each registry value once, including mutually exclusive
   modes such as search display, taskbar icon-only combining, and multi-monitor
   behavior.
@@ -45,7 +45,7 @@
   PS> ./Configure-Taskbar.ps1 -ExportConfig -ExportPath '.\taskbar.json'
   Exports the default taskbar settings template.
 .LINK
-  https://github.com/adnoctem/libps1
+  https://github.com/adnoctem/winkit
 .NOTES
   Author: Maximilian Gindorfer <info@mvprowess.com>
   License: MIT
@@ -118,7 +118,7 @@ param (
 
 # ---- Module import -----------------------------------------------------------
 $root = Split-Path (Split-Path $PSScriptRoot -Parent) -Parent
-$module = Join-Path $root 'lib/libps1.psm1'
+$module = Join-Path $root 'lib/winkit.psm1'
 Import-Module $module -Force
 # -----------------------------------------------------------------------------
 

@@ -1,12 +1,12 @@
 # Group Policy Management — LGPO Integration
 
-Implementation specification for adding policy-as-code management to libps1
+Implementation specification for adding policy-as-code management to winkit
 via Microsoft's LGPO utility. Companion to the repository-wide architecture
 document.
 
 ## Why LGPO and not direct registry writes
 
-libps1 already writes registry values directly via `Set-RegistryValue`. That
+winkit already writes registry values directly via `Set-RegistryValue`. That
 works correctly for all policy paths (`Software\Policies\...`) at the
 *application* level — Chrome, Firefox, Office, Windows, etc. all read the
 same registry locations regardless of who wrote them.

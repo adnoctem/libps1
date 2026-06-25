@@ -7,7 +7,7 @@ function Request-AdministratorPrivilege {
     .EXAMPLE
       PS> Request-AdministratorPrivilege
     .LINK
-      https://github.com/adnoctem/libps1/lib/permissions.ps1
+      https://github.com/adnoctem/winkit/lib/permissions.ps1
     .NOTES
       Author: Maximilian Gindorfer <info@mvprowess.com>
       License: MIT
@@ -37,7 +37,7 @@ function Read-ProcessElevation {
     .EXAMPLE
       PS> Read-ProcessElevation
     .LINK
-      https://github.com/adnoctem/libps1/lib/permissions.ps1
+      https://github.com/adnoctem/winkit/lib/permissions.ps1
     .NOTES
       Author: Maximilian Gindorfer <info@mvprowess.com>
       License: MIT

@@ -1,6 +1,8 @@
-# --- Internal ----------------------------------------------------------------
+﻿# --- Internal ----------------------------------------------------------------
 
 function Resolve-IPv6PrefixData {
+  [Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSUseSingularNouns', '', Justification = 'Data is a singular mass noun; there is no other option here.')]
+
   # Extracts the IPv6 address, masked prefix, and prefix length from a resolved
   # adapter's CIM parallel IPAddress/IPSubnet arrays. Shared by Get-NetworkPrefix
   # and Get-NetworkPrefixCIDR to avoid duplicating the masking logic.

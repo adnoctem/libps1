@@ -20,7 +20,7 @@
   This command exports the DHCP configuration for the specified scope to the XML file.
 
 .LINK
-  https://github.com/adnoctem/libps1
+  https://github.com/adnoctem/winkit
 
 .NOTES
   Author: Maximilian Gindorfer <info@mvprowess.com>

@@ -9,7 +9,7 @@ function Get-DefaultApp {
     .EXAMPLE
       PS> Get-DefaultApp -FileExtension ".txt"
     .LINK
-      https://github.com/adnoctem/libps1/lib/settings.ps1
+      https://github.com/adnoctem/winkit/lib/settings.ps1
     .NOTES
       Author: Maximilian Gindorfer <info@mvprowess.com>
       License: MIT

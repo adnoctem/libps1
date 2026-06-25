@@ -10,7 +10,7 @@ function Show-Color {
     .EXAMPLE
       PS> Show-LogColor
     .LINK
-      https://github.com/adnoctem/libps1/lib/log.ps1
+      https://github.com/adnoctem/winkit/lib/log.ps1
     .NOTES
       Author: Maximilian Gindorfer <info@mvprowess.com>
       License: MIT
@@ -33,14 +33,14 @@ function Write-Log {
     .EXAMPLE
       PS> Write-Log -Message 'Setup completed.' -Color Green -Timestamps
     .LINK
-      https://github.com/adnoctem/libps1/lib/log.ps1
+      https://github.com/adnoctem/winkit/lib/log.ps1
     .NOTES
       Author: Maximilian Gindorfer <info@mvprowess.com>
       License: MIT
   #>
 
   [Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSAvoidUsingWriteHost', '', Justification = 'Write-Output does not support -ForegroundColor.')]
-  [Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSAvoidOverwritingBuiltInCmdlets', '', Justification = 'libps1 intentionally exposes its established Write-Log helper.')]
+  [Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSAvoidOverwritingBuiltInCmdlets', '', Justification = 'winkit intentionally exposes its established Write-Log helper.')]
   [CmdletBinding()]
   param (
     [Parameter(Mandatory = $true)]

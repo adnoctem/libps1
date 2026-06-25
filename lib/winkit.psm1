@@ -1,5 +1,5 @@
 # --------------------------------------------------------------------
-# libps1.psm1 - Module wrapper for the 'libps1' function library
+# winkit.psm1 - Module wrapper for the 'winkit' function library
 # --------------------------------------------------------------------
 
 $_common = Join-Path -Path $PSScriptRoot -ChildPath 'common.ps1'

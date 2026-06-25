@@ -1,10 +1,10 @@
 @echo off
 setlocal EnableExtensions EnableDelayedExpansion
 cd /d "%~dp0"
-title libps1 - Bootstrap Installer
+title winkit - Bootstrap Installer
 
 rem ############################################################################
-rem  libps1 :: bin/bootstrap.cmd
+rem  winkit :: bin/bootstrap.cmd
 rem  Thin launcher -> scripts/Invoke-Bootstrap.ps1.
 rem  Installs winget, PowerShell 7, VC++ redistributables, registers bin\ on
 rem  system PATH.  Uses Windows PowerShell deliberately; pwsh may not exist yet.
@@ -37,8 +37,8 @@ exit /b %RC%
 rem === Functions ===
 
 :init_log
-if not exist "%LOCALAPPDATA%\libps1\logs" mkdir "%LOCALAPPDATA%\libps1\logs"
-set "LOG=%LOCALAPPDATA%\libps1\logs\bootstrap.log"
+if not exist "%LOCALAPPDATA%\winkit\logs" mkdir "%LOCALAPPDATA%\winkit\logs"
+set "LOG=%LOCALAPPDATA%\winkit\logs\bootstrap.log"
 exit /b 0
 
 :show_banner
@@ -54,13 +54,13 @@ echo %ORANGE%███████║██║  ██║    ██╔██╗ 
 echo %ORANGE%██╔══██║██║  ██║    ██║╚██╗██║██║   ██║██║        ██║   ██╔══╝  ██║╚██╔╝██║%RESET%
 echo %ORANGE%██║  ██║██████╔╝    ██║ ╚████║╚██████╔╝╚██████╗   ██║   ███████╗██║ ╚═╝ ██║%RESET%
 echo %ORANGE%╚═╝  ╚═╝╚═════╝     ╚═╝  ╚═══╝ ╚═════╝  ╚═════╝   ╚═╝   ╚══════╝╚═╝     ╚═╝%RESET%
-echo     %GRAY%libps1 machine configuration  ::  first-run bootstrap%RESET%
+echo     %GRAY%winkit machine configuration  ::  first-run bootstrap%RESET%
 echo.
 exit /b 0
 
 :usage
 echo.
-echo libps1 :: bootstrap.cmd - First-Run Machine Bootstrap
+echo winkit :: bootstrap.cmd - First-Run Machine Bootstrap
 echo =====================================================
 echo.
 echo Installs essential prerequisites on a fresh Windows machine:

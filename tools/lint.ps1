@@ -14,8 +14,8 @@
   suitable for pre-commit and CI usage.
 
 .PARAMETER Path
-  Files or directories to analyze. Defaults to lib, scripts, build.ps1, and
-  format.ps1 when they exist.
+  Files or directories to analyze. Defaults to lib, scripts, tools/build.ps1,
+  and tools/format.ps1 when they exist.
 
 .PARAMETER Settings
   PSScriptAnalyzer settings file. Defaults to PSScriptAnalyzerSettings.psd1 in
@@ -30,7 +30,7 @@
   Runs analyzer checks over selected paths.
 
 .LINK
-  https://github.com/adnoctem/libps1
+  https://github.com/adnoctem/winkit
 
 .NOTES
   Author: Maximilian Gindorfer <info@mvprowess.com>
@@ -40,13 +40,13 @@
 [CmdletBinding()]
 param (
   [string[]]$Path = @(
-    (Join-Path -Path $PSScriptRoot -ChildPath 'lib'),
-    (Join-Path -Path $PSScriptRoot -ChildPath 'scripts'),
+    (Join-Path -Path (Split-Path -Path $PSScriptRoot -Parent) -ChildPath 'lib'),
+    (Join-Path -Path (Split-Path -Path $PSScriptRoot -Parent) -ChildPath 'scripts'),
     (Join-Path -Path $PSScriptRoot -ChildPath 'build.ps1'),
     (Join-Path -Path $PSScriptRoot -ChildPath 'format.ps1')
   ),
 
-  [string]$Settings = (Join-Path -Path $PSScriptRoot -ChildPath 'PSScriptAnalyzerSettings.psd1')
+  [string]$Settings = (Join-Path -Path (Split-Path -Path $PSScriptRoot -Parent) -ChildPath 'PSScriptAnalyzerSettings.psd1')
 )
 
 $ErrorActionPreference = 'Stop'

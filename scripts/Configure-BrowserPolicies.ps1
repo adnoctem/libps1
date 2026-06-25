@@ -4,7 +4,7 @@
 .SYNOPSIS
   Configures browser policy defaults for Microsoft Edge and optional third-party browsers.
 .DESCRIPTION
-  Applies browser policy registry values using libps1 helpers. The default
+  Applies browser policy registry values using winkit helpers. The default
   profile configures Microsoft Edge Chromium only. Chrome and Firefox entries
   are exported with Preferred = null so users can opt in through JSON config
   without the default run unexpectedly managing third-party browser policies.
@@ -34,7 +34,7 @@
   PS> ./Configure-BrowserPolicies.ps1 -ExportConfig -ExportPath '.\browser-policies.json'
   Exports the default policy template, including opt-in Chrome and Firefox entries.
 .LINK
-  https://github.com/adnoctem/libps1
+  https://github.com/adnoctem/winkit
 .NOTES
   Author: Maximilian Gindorfer <info@mvprowess.com>
   License: MIT
@@ -93,7 +93,7 @@ param (
 
 # ---- Module import -----------------------------------------------------------
 $root = Split-Path (Split-Path $PSScriptRoot -Parent) -Parent
-$module = Join-Path $root 'lib/libps1.psm1'
+$module = Join-Path $root 'lib/winkit.psm1'
 Import-Module $module -Force
 # -----------------------------------------------------------------------------
 

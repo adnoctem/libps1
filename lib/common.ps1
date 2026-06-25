@@ -56,7 +56,7 @@ function New-OperationResult {
       Creates a compact script result that does not include Source or Scope
       columns because they were not supplied.
     .LINK
-      https://github.com/adnoctem/libps1/lib/common.ps1
+      https://github.com/adnoctem/winkit/lib/common.ps1
     .NOTES
       Author: Maximilian Gindorfer <info@mvprowess.com>
       License: MIT
@@ -159,7 +159,7 @@ function Add-OperationResult {
 
       Adds and returns the result object.
     .LINK
-      https://github.com/adnoctem/libps1/lib/common.ps1
+      https://github.com/adnoctem/winkit/lib/common.ps1
     .NOTES
       Author: Maximilian Gindorfer <info@mvprowess.com>
       License: MIT
@@ -213,7 +213,7 @@ function Write-OperationResultLog {
       console output concise but still need an auditable record of every
       action, skipped action, and failure.
 
-      Logs are written to %TEMP%\libps1\logs by default. Each line includes a
+      Logs are written to %TEMP%\winkit\logs by default. Each line includes a
       timestamp, script name, and the properties already present on the result
       object, such as Target, Source, Scope, Action, Status, Detail,
       SkippedReason, or Error.
@@ -224,14 +224,14 @@ function Write-OperationResultLog {
       calling script name when available.
     .PARAMETER Path
       Optional explicit output file path. When omitted, a timestamped .jsonl
-      file is created under %TEMP%\libps1\logs.
+      file is created under %TEMP%\winkit\logs.
     .EXAMPLE
       PS> $path = Write-OperationResultLog -Results $results -ScriptName 'Remove-Bloatware'
       PS> Write-Log -Message "Operation log: $path" -Color Gray
 
       Writes the accumulated operation results and prints the resulting path.
     .LINK
-      https://github.com/adnoctem/libps1/lib/common.ps1
+      https://github.com/adnoctem/winkit/lib/common.ps1
     .NOTES
       Author: Maximilian Gindorfer <info@mvprowess.com>
       License: MIT
@@ -258,14 +258,14 @@ function Write-OperationResultLog {
       $ScriptName = [System.IO.Path]::GetFileNameWithoutExtension($MyInvocation.ScriptName)
     }
     else {
-      $ScriptName = 'libps1-operation'
+      $ScriptName = 'winkit-operation'
     }
   }
 
   $_safeScriptName = $ScriptName -replace '[^A-Za-z0-9._-]', '-'
   if ([string]::IsNullOrWhiteSpace($Path)) {
     $_tempRoot = if ([string]::IsNullOrWhiteSpace($env:TEMP)) { [System.IO.Path]::GetTempPath() } else { $env:TEMP }
-    $_logRoot = Join-Path -Path $_tempRoot -ChildPath 'libps1\logs'
+    $_logRoot = Join-Path -Path $_tempRoot -ChildPath 'winkit\logs'
     if (-not (Test-Path -LiteralPath $_logRoot)) {
       $null = [System.IO.Directory]::CreateDirectory($_logRoot)
     }
@@ -320,7 +320,7 @@ function Export-RegistrySettingState {
       Exports current taskbar registry values in the same schema consumed by
       Configure-Taskbar.ps1 -Config.
     .LINK
-      https://github.com/adnoctem/libps1/lib/common.ps1
+      https://github.com/adnoctem/winkit/lib/common.ps1
     .NOTES
       Author: Maximilian Gindorfer <info@mvprowess.com>
       License: MIT
@@ -402,7 +402,7 @@ function ConvertTo-RegistrySettingResult {
 
       Creates dry-run audit records for a registry-backed configuration script.
     .LINK
-      https://github.com/adnoctem/libps1/lib/common.ps1
+      https://github.com/adnoctem/winkit/lib/common.ps1
     .NOTES
       Author: Maximilian Gindorfer <info@mvprowess.com>
       License: MIT

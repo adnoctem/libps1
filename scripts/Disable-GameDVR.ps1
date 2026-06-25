@@ -6,7 +6,7 @@
 
 .DESCRIPTION
   Applies registry values that disable Game DVR capture and redirect Game Bar
-  protocol handlers away from the Xbox Game Bar application. Uses the libps1
+  protocol handlers away from the Xbox Game Bar application. Uses the winkit
   registry helpers for idempotent writes. -Undo removes the values managed by
   this script, matching the delete-on-undo behavior documented in the source
   material.
@@ -51,7 +51,7 @@
   Exports the default Game DVR settings template to .\game-dvr-settings.json.
 
 .LINK
-  https://github.com/adnoctem/libps1
+  https://github.com/adnoctem/winkit
 
 .NOTES
   Author: Maximilian Gindorfer <info@mvprowess.com>
@@ -111,7 +111,7 @@ param (
 
 # ---- Module import -----------------------------------------------------------
 $root = Split-Path (Split-Path $PSScriptRoot -Parent) -Parent
-$module = Join-Path $root 'lib/libps1.psm1'
+$module = Join-Path $root 'lib/winkit.psm1'
 Import-Module $module -Force
 # -----------------------------------------------------------------------------
 

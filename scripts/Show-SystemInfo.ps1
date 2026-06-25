@@ -7,7 +7,7 @@
   Renders a compact "fetch" view of the local machine - user, hostname, OS,
   host model, kernel/build, uptime, shell, installed package counts, memory
   and disk usage - next to a small two-tone rendition of the Windows flag.
-  All reusable data is gathered through libps1 functions; presentation-only
+  All reusable data is gathered through winkit functions; presentation-only
   details are resolved locally.
 
   The output is produced by Show-SystemInfo, which is also aliased to
@@ -20,7 +20,7 @@
   PS> . .\scripts\Show-SystemInfo.ps1
   PS> fetch
 .LINK
-  https://github.com/adnoctem/libps1
+  https://github.com/adnoctem/winkit
 .NOTES
   Author: Maximilian Gindorfer <info@mvprowess.com>
   License: MIT
@@ -28,7 +28,7 @@
 
 # ---- Module import -----------------------------------------------------------
 $root = Split-Path $PSScriptRoot -Parent
-$module = Join-Path $root 'lib/libps1.psm1'
+$module = Join-Path $root 'lib/winkit.psm1'
 Import-Module $module -Force
 # -----------------------------------------------------------------------------
 
@@ -48,7 +48,7 @@ function Show-SystemInfo {
     .EXAMPLE
       PS> fetch
     .LINK
-      https://github.com/adnoctem/libps1/scripts/Show-SystemInfo.ps1
+      https://github.com/adnoctem/winkit/scripts/Show-SystemInfo.ps1
     .NOTES
       Author: Maximilian Gindorfer <info@mvprowess.com>
       License: MIT

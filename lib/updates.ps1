@@ -36,7 +36,7 @@ function Test-PSWindowsUpdateAvailable {
     .EXAMPLE
       PS> Test-PSWindowsUpdateAvailable
     .LINK
-      https://github.com/adnoctem/libps1/lib/updates.ps1
+      https://github.com/adnoctem/winkit/lib/updates.ps1
     .NOTES
       Author: Maximilian Gindorfer <info@mvprowess.com>
       License: MIT
@@ -77,7 +77,7 @@ function Get-WindowsUpdate {
       PS> Get-WindowsUpdate -KBArticleID 'KB5021233'
 
     .LINK
-      https://github.com/adnoctem/libps1/lib/updates.ps1
+      https://github.com/adnoctem/winkit/lib/updates.ps1
     .NOTES
       Author: Maximilian Gindorfer <info@mvprowess.com>
       License: MIT
@@ -164,7 +164,7 @@ function Install-WindowsUpdate {
       PS> Install-WindowsUpdate -AcceptAll -AutoReboot
 
     .LINK
-      https://github.com/adnoctem/libps1/lib/updates.ps1
+      https://github.com/adnoctem/winkit/lib/updates.ps1
     .NOTES
       Author: Maximilian Gindorfer <info@mvprowess.com>
       License: MIT
@@ -283,7 +283,7 @@ function Hide-WindowsUpdate {
       PS> Hide-WindowsUpdate -KBArticleID 'KB5021233'
 
     .LINK
-      https://github.com/adnoctem/libps1/lib/updates.ps1
+      https://github.com/adnoctem/winkit/lib/updates.ps1
     .NOTES
       Author: Maximilian Gindorfer <info@mvprowess.com>
       License: MIT
@@ -364,7 +364,7 @@ function Get-WindowsUpdateHistory {
       PS> Get-WindowsUpdateHistory -KBArticleID 'KB5021233'
 
     .LINK
-      https://github.com/adnoctem/libps1/lib/updates.ps1
+      https://github.com/adnoctem/winkit/lib/updates.ps1
     .NOTES
       Author: Maximilian Gindorfer <info@mvprowess.com>
       License: MIT
@@ -420,7 +420,7 @@ function Uninstall-WindowsUpdate {
       PS> Uninstall-WindowsUpdate -KBArticleID 'KB5021233'
 
     .LINK
-      https://github.com/adnoctem/libps1/lib/updates.ps1
+      https://github.com/adnoctem/winkit/lib/updates.ps1
     .NOTES
       Author: Maximilian Gindorfer <info@mvprowess.com>
       License: MIT
@@ -469,7 +469,7 @@ function Test-WindowsUpdateRebootRequired {
       PS> if (Test-WindowsUpdateRebootRequired) { Restart-Computer }
 
     .LINK
-      https://github.com/adnoctem/libps1/lib/updates.ps1
+      https://github.com/adnoctem/winkit/lib/updates.ps1
     .NOTES
       Author: Maximilian Gindorfer <info@mvprowess.com>
       License: MIT
@@ -510,7 +510,7 @@ function Get-WindowsUpdateConfiguration {
       PS> Get-WindowsUpdateConfiguration
 
     .LINK
-      https://github.com/adnoctem/libps1/lib/updates.ps1
+      https://github.com/adnoctem/winkit/lib/updates.ps1
     .NOTES
       Author: Maximilian Gindorfer <info@mvprowess.com>
       License: MIT
@@ -560,7 +560,7 @@ function Get-MSStoreUpdate {
       PS> Get-MSStoreUpdate -PackageFamilyName '*WindowsTerminal*'
 
     .LINK
-      https://github.com/adnoctem/libps1/lib/updates.ps1
+      https://github.com/adnoctem/winkit/lib/updates.ps1
     .NOTES
       Author: Maximilian Gindorfer <info@mvprowess.com>
       License: MIT
@@ -640,7 +640,7 @@ function Install-MSStoreUpdate {
       PS> Install-MSStoreUpdate -All
 
     .LINK
-      https://github.com/adnoctem/libps1/lib/updates.ps1
+      https://github.com/adnoctem/winkit/lib/updates.ps1
     .NOTES
       Author: Maximilian Gindorfer <info@mvprowess.com>
       License: MIT

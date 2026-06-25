@@ -1,5 +1,5 @@
 <#
-  Initial bootstrapping script used to download PowerShell module dependencies
+  Initial setup script used to download PowerShell module dependencies
   defined in the project manifest and set up the project for local use.
 #>
 
@@ -9,10 +9,11 @@ param(
 
 # ---- Configure module -----------------------------------------
 
-$manifestPath = Join-Path -Path $PSScriptRoot 'lib/libps1.psd1'
+$RepositoryRoot = Split-Path -Path $PSScriptRoot -Parent
+$manifestPath = Join-Path -Path $RepositoryRoot -ChildPath 'lib/winkit.psd1'
 $manifest = Test-ModuleManifest -Path $manifestPath -ErrorAction SilentlyContinue
 
-Write-Output "Using manifest: $manifest"
+Write-Host "Using manifest: $manifest"
 
 foreach ($mod in $manifest.RequiredModules) {
   # RequiredModules entries can be strings or hashtables
@@ -25,11 +26,11 @@ foreach ($mod in $manifest.RequiredModules) {
     $version = $mod.ModuleVersion
   }
 
-  Write-Output "Ensuring module '$name' is installed.." -ForegroundColor Yellow
+  Write-Host "Ensuring module '$name' is installed.." -ForegroundColor Yellow
 
   $installed = Get-Module -ListAvailable -Name $name |
-    Sort-Object Version -Descending |
-    Select-Object -First 1
+  Sort-Object Version -Descending |
+  Select-Object -First 1
 
   if ($installed -and (!$version -or $installed.Version -ge [version]$version)) {
     Write-Output "    -> OK (found $($installed.Version))"
@@ -37,15 +38,15 @@ foreach ($mod in $manifest.RequiredModules) {
   }
 
   $params = @{
-    Name = $name
-    Scope = 'CurrentUser'
-    Force = $true
+    Name         = $name
+    Scope        = 'CurrentUser'
+    Force        = $true
     AllowClobber = $true
   }
 
   if ($version) { $params['RequiredVersion'] = $version }
   if (-not $Force) {
-    Write-Output "    -> Installing module: $name at version: $version (use -Force to skip prompts)"
+    Write-Host "    -> Installing module: $name at version: $version (use -Force to skip prompts)" -ForegroundColor Yellow
   }
 
   Install-Module @params
@@ -53,4 +54,4 @@ foreach ($mod in $manifest.RequiredModules) {
 
 # ---------------------------------------------------------------
 
-Write-Output "Successfully processed all RequiredModules!" -ForegroundColor Yellow
+Write-Host "Successfully processed all RequiredModules!" -ForegroundColor Yellow

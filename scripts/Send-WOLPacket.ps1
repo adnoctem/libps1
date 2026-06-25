@@ -27,7 +27,7 @@
 .EXAMPLE
   PS> Send-WOLPacket -MacAddress '1A:2B:3C:4D:5E:6F' -DryRun
 .LINK
-  https://github.com/adnoctem/libps1
+  https://github.com/adnoctem/winkit
 .NOTES
   Author: Maximilian Gindorfer <info@mvprowess.com>
   License: MIT
@@ -52,11 +52,11 @@ param (
 
 # ---- Module import -----------------------------------------------------------
 $root = Split-Path $PSScriptRoot -Parent
-$module = Join-Path $root 'lib/libps1.psm1'
+$module = Join-Path $root 'lib/winkit.psm1'
 Import-Module $module -Force
 # -----------------------------------------------------------------------------
 
-$Host.UI.RawUI.WindowTitle = 'libps1 - Send-WOLPacket'
+$Host.UI.RawUI.WindowTitle = 'winkit - Send-WOLPacket'
 
 if ($DryRun) {
   Write-Log -Message "DRY RUN - no packets will be sent`n" -Color Yellow

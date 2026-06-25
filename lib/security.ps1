@@ -311,7 +311,7 @@ function Invoke-SafeProcess {
     .EXAMPLE
       PS> Invoke-SafeProcess -FilePath 'systeminfo.exe' -PassThru
     .LINK
-      https://github.com/adnoctem/libps1/lib/security.ps1
+      https://github.com/adnoctem/winkit/lib/security.ps1
     .NOTES
       Author: Maximilian Gindorfer <info@mvprowess.com>
       License: MIT
@@ -404,7 +404,7 @@ function Export-EventLog {
     .EXAMPLE
       PS> Export-EventLog -LogName 'Security' -OutputPath '.\EVTX\Security.evtx'
     .LINK
-      https://github.com/adnoctem/libps1/lib/security.ps1
+      https://github.com/adnoctem/winkit/lib/security.ps1
     .NOTES
       Author: Maximilian Gindorfer <info@mvprowess.com>
       License: MIT
@@ -464,7 +464,7 @@ function Get-ScheduledTaskAction {
     .EXAMPLE
       PS> Get-ScheduledTaskAction -SuspiciousOnly
     .LINK
-      https://github.com/adnoctem/libps1/lib/security.ps1
+      https://github.com/adnoctem/winkit/lib/security.ps1
     .NOTES
       Author: Maximilian Gindorfer <info@mvprowess.com>
       License: MIT
@@ -517,7 +517,7 @@ function Get-WMIPersistence {
       PS> $wmi = Get-WMIPersistence
       PS> $wmi.EventFilters | Format-List
     .LINK
-      https://github.com/adnoctem/libps1/lib/security.ps1
+      https://github.com/adnoctem/winkit/lib/security.ps1
     .NOTES
       Author: Maximilian Gindorfer <info@mvprowess.com>
       License: MIT

@@ -59,7 +59,7 @@
   Exports the default settings template to a JSON file.
 
 .LINK
-  https://github.com/adnoctem/libps1
+  https://github.com/adnoctem/winkit
 
 .NOTES
   Author: Maximilian Gindorfer <info@mvprowess.com>
@@ -126,7 +126,7 @@ param (
 
 # ---- Module import -----------------------------------------------------------
 $root = Split-Path (Split-Path $PSScriptRoot -Parent) -Parent
-$module = Join-Path $root 'lib/libps1.psm1'
+$module = Join-Path $root 'lib/winkit.psm1'
 Import-Module $module -Force
 # -----------------------------------------------------------------------------
 

@@ -85,7 +85,7 @@ function Get-OSBuildNumber {
       PS> Get-OSBuildNumber
       22621
     .LINK
-      https://github.com/adnoctem/libps1/lib/sysinfo.ps1
+      https://github.com/adnoctem/winkit/lib/sysinfo.ps1
     .NOTES
       Author: Maximilian Gindorfer <info@mvprowess.com>
       License: MIT
@@ -110,7 +110,7 @@ function Get-OSDisplayVersion {
       PS> Get-OSDisplayVersion
       23H2
     .LINK
-      https://github.com/adnoctem/libps1/lib/sysinfo.ps1
+      https://github.com/adnoctem/winkit/lib/sysinfo.ps1
     .NOTES
       Author: Maximilian Gindorfer <info@mvprowess.com>
       License: MIT
@@ -142,7 +142,7 @@ function Get-OSEdition {
       PS> Get-OSEdition
       Professional
     .LINK
-      https://github.com/adnoctem/libps1/lib/sysinfo.ps1
+      https://github.com/adnoctem/winkit/lib/sysinfo.ps1
     .NOTES
       Author: Maximilian Gindorfer <info@mvprowess.com>
       License: MIT
@@ -166,7 +166,7 @@ function Get-OSProductName {
       PS> Get-OSProductName
       Windows 11 Pro
     .LINK
-      https://github.com/adnoctem/libps1/lib/sysinfo.ps1
+      https://github.com/adnoctem/winkit/lib/sysinfo.ps1
     .NOTES
       Author: Maximilian Gindorfer <info@mvprowess.com>
       License: MIT
@@ -195,7 +195,7 @@ function Get-OSVersionInfo {
     .EXAMPLE
       PS> Get-OSVersionInfo | Format-List
     .LINK
-      https://github.com/adnoctem/libps1/lib/sysinfo.ps1
+      https://github.com/adnoctem/winkit/lib/sysinfo.ps1
     .NOTES
       Author: Maximilian Gindorfer <info@mvprowess.com>
       License: MIT
@@ -247,7 +247,7 @@ function Get-SystemMemory {
     .EXAMPLE
       PS> Get-SystemMemory | Format-List
     .LINK
-      https://github.com/adnoctem/libps1/lib/sysinfo.ps1
+      https://github.com/adnoctem/winkit/lib/sysinfo.ps1
     .NOTES
       Author: Maximilian Gindorfer <info@mvprowess.com>
       License: MIT
@@ -298,7 +298,7 @@ function Get-SystemDisk {
     .EXAMPLE
       PS> Get-SystemDisk | Format-Table -AutoSize
     .LINK
-      https://github.com/adnoctem/libps1/lib/sysinfo.ps1
+      https://github.com/adnoctem/winkit/lib/sysinfo.ps1
     .NOTES
       Author: Maximilian Gindorfer <info@mvprowess.com>
       License: MIT
@@ -371,7 +371,7 @@ function Get-Hostname {
     .EXAMPLE
       PS> Get-Hostname
     .LINK
-      https://github.com/adnoctem/libps1/lib/sysinfo.ps1
+      https://github.com/adnoctem/winkit/lib/sysinfo.ps1
     .NOTES
       Author: Maximilian Gindorfer <info@mvprowess.com>
       License: MIT
@@ -412,7 +412,7 @@ function Get-SystemUptime {
     .EXAMPLE
       PS> Get-SystemUptime | Format-List
     .LINK
-      https://github.com/adnoctem/libps1/lib/sysinfo.ps1
+      https://github.com/adnoctem/winkit/lib/sysinfo.ps1
     .NOTES
       Author: Maximilian Gindorfer <info@mvprowess.com>
       License: MIT
@@ -451,7 +451,7 @@ function Get-SystemInfo {
     .EXAMPLE
       PS> Get-SystemInfo
     .LINK
-      https://github.com/adnoctem/libps1/lib/sysinfo.ps1
+      https://github.com/adnoctem/winkit/lib/sysinfo.ps1
     .NOTES
       Author: Maximilian Gindorfer <info@mvprowess.com>
       License: MIT
@@ -486,21 +486,21 @@ function Get-SystemInfo {
 function Get-SystemPaths {
   <#
     .SYNOPSIS
-      Returns standard libps1 directory paths for tools, config, cache, data, and logs.
+      Returns standard winkit directory paths for tools, config, cache, data, and logs.
     .DESCRIPTION
-      Provides a single structured lookup for the five canonical libps1 folders.
+      Provides a single structured lookup for the five canonical winkit folders.
       The -Name parameter controls the subdirectory name used under each root.
-      Defaults to 'libps1' so callers can omit it for standard usage.
+      Defaults to 'winkit' so callers can omit it for standard usage.
     .PARAMETER Name
-      Subdirectory name under each root. Defaults to 'libps1'.
+      Subdirectory name under each root. Defaults to 'winkit'.
     .EXAMPLE
       PS> $paths = Get-SystemPaths
       PS> $paths.Data
-      C:\ProgramData\libps1
+      C:\ProgramData\winkit
     .EXAMPLE
       PS> Get-SystemPaths -Name 'myapp' | Format-List
     .LINK
-      https://github.com/adnoctem/libps1/lib/system.ps1
+      https://github.com/adnoctem/winkit/lib/system.ps1
     .NOTES
       Author: Maximilian Gindorfer <info@mvprowess.com>
       License: MIT
@@ -511,7 +511,7 @@ function Get-SystemPaths {
   param(
     [Parameter(Mandatory = $false)]
     [string]
-    $Name = 'libps1'
+    $Name = 'winkit'
   )
 
   return [PSCustomObject]@{

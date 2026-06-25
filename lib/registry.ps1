@@ -34,7 +34,7 @@ function ConvertTo-RegistryProviderPath {
       PS> ConvertTo-RegistryProviderPath 'Registry::HKEY_CURRENT_USER\Control Panel'
       HKCU:\Control Panel
     .LINK
-      https://github.com/adnoctem/libps1/lib/registry.ps1
+      https://github.com/adnoctem/winkit/lib/registry.ps1
     .NOTES
       Author: Maximilian Gindorfer <info@mvprowess.com>
       License: MIT
@@ -97,7 +97,7 @@ function Resolve-RegistryPath {
     .EXAMPLE
       PS> Resolve-RegistryPath -Path 'HKCU:\Control Panel\Desktop' -Writable
     .LINK
-      https://github.com/adnoctem/libps1/lib/registry.ps1
+      https://github.com/adnoctem/winkit/lib/registry.ps1
     .NOTES
       Author: Maximilian Gindorfer <info@mvprowess.com>
       License: MIT
@@ -182,7 +182,7 @@ function Get-RegistryKey {
     .EXAMPLE
       PS> Get-RegistryKey -Path 'HKLM:\Software\Microsoft'
     .LINK
-      https://github.com/adnoctem/libps1/lib/registry.ps1
+      https://github.com/adnoctem/winkit/lib/registry.ps1
     .NOTES
       Author: Maximilian Gindorfer <info@mvprowess.com>
       License: MIT
@@ -243,7 +243,7 @@ function Set-RegistryKey {
     .EXAMPLE
       PS> Set-RegistryKey -Path 'HKLM:\Software\MyApp'
     .LINK
-      https://github.com/adnoctem/libps1/lib/registry.ps1
+      https://github.com/adnoctem/winkit/lib/registry.ps1
     .NOTES
       Author: Maximilian Gindorfer <info@mvprowess.com>
       License: MIT
@@ -311,7 +311,7 @@ function Remove-RegistryKey {
     .EXAMPLE
       PS> Remove-RegistryKey -Path 'HKLM:\Software\MyApp' -Recurse
     .LINK
-      https://github.com/adnoctem/libps1/lib/registry.ps1
+      https://github.com/adnoctem/winkit/lib/registry.ps1
     .NOTES
       Author: Maximilian Gindorfer <info@mvprowess.com>
       License: MIT
@@ -381,7 +381,7 @@ function Get-RegistryValue {
     .EXAMPLE
       PS> Get-RegistryValue -Path 'HKLM:\Software\MyApp' -Name 'Version'
     .LINK
-      https://github.com/adnoctem/libps1/lib/registry.ps1
+      https://github.com/adnoctem/winkit/lib/registry.ps1
     .NOTES
       Author: Maximilian Gindorfer <info@mvprowess.com>
       License: MIT
@@ -446,7 +446,7 @@ function Set-RegistryValue {
     .EXAMPLE
       PS> Set-RegistryValue -Path 'HKLM:\Software\MyApp' -Name 'Enabled' -Value 1 -Type DWord
     .LINK
-      https://github.com/adnoctem/libps1/lib/registry.ps1
+      https://github.com/adnoctem/winkit/lib/registry.ps1
     .NOTES
       Author: Maximilian Gindorfer <info@mvprowess.com>
       License: MIT
@@ -628,7 +628,7 @@ function Remove-RegistryValue {
     .EXAMPLE
       PS> Remove-RegistryValue -Path 'HKLM:\Software\MyApp' -Name 'Version'
     .LINK
-      https://github.com/adnoctem/libps1/lib/registry.ps1
+      https://github.com/adnoctem/winkit/lib/registry.ps1
     .NOTES
       Author: Maximilian Gindorfer <info@mvprowess.com>
       License: MIT
@@ -708,7 +708,7 @@ function Test-RegistryPath {
     .EXAMPLE
       PS> if (Test-RegistryPath 'HKLM:\Software\MyApp') { ... }
     .LINK
-      https://github.com/adnoctem/libps1/lib/registry.ps1
+      https://github.com/adnoctem/winkit/lib/registry.ps1
     .NOTES
       Author: Maximilian Gindorfer <info@mvprowess.com>
       License: MIT
@@ -740,7 +740,7 @@ function Test-RegistryValue {
     .EXAMPLE
       PS> if (Test-RegistryValue 'HKLM:\Software\MyApp' -Name 'Version') { ... }
     .LINK
-      https://github.com/adnoctem/libps1/lib/registry.ps1
+      https://github.com/adnoctem/winkit/lib/registry.ps1
     .NOTES
       Author: Maximilian Gindorfer <info@mvprowess.com>
       License: MIT
@@ -789,7 +789,7 @@ function Get-RegistryValueKind {
       PS> Get-RegistryValueKind -Path 'HKLM:\Software\MyApp' -Name 'PathVar'
       ExpandString
     .LINK
-      https://github.com/adnoctem/libps1/lib/registry.ps1
+      https://github.com/adnoctem/winkit/lib/registry.ps1
     .NOTES
       Author: Maximilian Gindorfer <info@mvprowess.com>
       License: MIT
@@ -961,7 +961,7 @@ function Export-RegistryKey {
     .EXAMPLE
       PS> Export-RegistryKey -Key 'HKLM\Software\Microsoft\Windows\CurrentVersion\Run' -OutputPath '.\HKLM-Run.reg'
     .LINK
-      https://github.com/adnoctem/libps1/lib/registry.ps1
+      https://github.com/adnoctem/winkit/lib/registry.ps1
     .NOTES
       Author: Maximilian Gindorfer <info@mvprowess.com>
       License: MIT
@@ -1005,7 +1005,7 @@ function Search-RegistryKey {
     .EXAMPLE
       PS> Search-RegistryKey -Root 'HKLM' -Pattern 'InstallUtil' -OutputPath '.\Reg-HKLM-InstallUtil.txt'
     .LINK
-      https://github.com/adnoctem/libps1/lib/registry.ps1
+      https://github.com/adnoctem/winkit/lib/registry.ps1
     .NOTES
       Author: Maximilian Gindorfer <info@mvprowess.com>
       License: MIT

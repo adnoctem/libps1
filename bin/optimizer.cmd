@@ -1,10 +1,10 @@
 @echo off
 setlocal EnableExtensions EnableDelayedExpansion
 cd /d "%~dp0"
-title libps1 - Machine Optimizer
+title winkit - Machine Optimizer
 
 rem ############################################################################
-rem  libps1 :: bin/optimizer.cmd
+rem  winkit :: bin/optimizer.cmd
 rem  Thin launcher -> scripts/Invoke-Optimizer.ps1.
 rem  First positional arg is the profile name (Desktop|Server|DC|Minimal),
 rem  defaults to Desktop.  Remaining args forwarded to the PowerShell script.
@@ -47,8 +47,8 @@ exit /b %RC%
 rem === Functions ===
 
 :init_log
-if not exist "%LOCALAPPDATA%\libps1\logs" mkdir "%LOCALAPPDATA%\libps1\logs"
-set "LOG=%LOCALAPPDATA%\libps1\logs\optimizer.log"
+if not exist "%LOCALAPPDATA%\winkit\logs" mkdir "%LOCALAPPDATA%\winkit\logs"
+set "LOG=%LOCALAPPDATA%\winkit\logs\optimizer.log"
 exit /b 0
 
 :show_banner
@@ -64,13 +64,13 @@ echo %ORANGE%███████║██║  ██║    ██╔██╗ 
 echo %ORANGE%██╔══██║██║  ██║    ██║╚██╗██║██║   ██║██║        ██║   ██╔══╝  ██║╚██╔╝██║%RESET%
 echo %ORANGE%██║  ██║██████╔╝    ██║ ╚████║╚██████╔╝╚██████╗   ██║   ███████╗██║ ╚═╝ ██║%RESET%
 echo %ORANGE%╚═╝  ╚═╝╚═════╝     ╚═╝  ╚═══╝ ╚═════╝  ╚═════╝   ╚═╝   ╚══════╝╚═╝     ╚═╝%RESET%
-echo     %GRAY%libps1 machine configuration  ::  profile: %PROFILE_NAME%%RESET%
+echo     %GRAY%winkit machine configuration  ::  profile: %PROFILE_NAME%%RESET%
 echo.
 exit /b 0
 
 :usage
 echo.
-echo libps1 :: optimizer.cmd - Windows Configuration Orchestrator
+echo winkit :: optimizer.cmd - Windows Configuration Orchestrator
 echo ===========================================================
 echo.
 echo Runs a curated set of configuration scripts in dependency order

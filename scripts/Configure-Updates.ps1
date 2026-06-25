@@ -5,7 +5,7 @@
   Configures Windows Update policy defaults.
 .DESCRIPTION
   Applies Windows Update, Delivery Optimization, restart, and driver-update
-  policy values using libps1 registry helpers. The default profile keeps
+  policy values using winkit registry helpers. The default profile keeps
   automatic updates enabled while reducing peer sharing, unexpected restarts,
   and driver delivery through quality updates.
 .PARAMETER Undo
@@ -36,7 +36,7 @@
   PS> ./Configure-Updates.ps1 -ExportConfig -ExportPath '.\updates.json'
   Exports the default update policy template.
 .LINK
-  https://github.com/adnoctem/libps1
+  https://github.com/adnoctem/winkit
 .NOTES
   Author: Maximilian Gindorfer <info@mvprowess.com>
   License: MIT
@@ -95,7 +95,7 @@ param (
 
 # ---- Module import -----------------------------------------------------------
 $root = Split-Path (Split-Path $PSScriptRoot -Parent) -Parent
-$module = Join-Path $root 'lib/libps1.psm1'
+$module = Join-Path $root 'lib/winkit.psm1'
 Import-Module $module -Force
 # -----------------------------------------------------------------------------
 

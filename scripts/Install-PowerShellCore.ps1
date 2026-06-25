@@ -1,4 +1,4 @@
-﻿#Requires -Version 5.0
+#Requires -Version 5.0
 
 <#
 .SYNOPSIS
@@ -26,7 +26,7 @@
   PS> ./Install-PowerShellCore.ps1 -DryRun
 
 .LINK
-  https://github.com/adnoctem/libps1
+  https://github.com/adnoctem/winkit
 
 .NOTES
   Author: Maximilian Gindorfer <info@mvprowess.com>
@@ -46,7 +46,7 @@ param (
 
 # ---- Module import -----------------------------------------------------------
 $root = Split-Path $PSScriptRoot -Parent
-$module = Join-Path $root 'lib/libps1.psm1'
+$module = Join-Path $root 'lib/winkit.psm1'
 Import-Module $module -Force
 # -----------------------------------------------------------------------------
 

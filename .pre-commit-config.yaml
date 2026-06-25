@@ -14,12 +14,12 @@ repos:
     hooks:
       - id: powershell-format
         name: PowerShell format check
-        entry: pwsh -NoProfile -ExecutionPolicy Bypass -File ./format.ps1 -Check
+        entry: pwsh -NoProfile -ExecutionPolicy Bypass -File ./tools/format.ps1 -Check
         language: system
         pass_filenames: false
 
       - id: psscriptanalyzer
         name: PSScriptAnalyzer
-        entry: pwsh -NoProfile -ExecutionPolicy Bypass -File ./lint.ps1
+        entry: pwsh -NoProfile -ExecutionPolicy Bypass -File ./tools/lint.ps1
         language: system
         pass_filenames: false

@@ -1,4 +1,4 @@
-﻿#Requires -Version 5.0
+#Requires -Version 5.0
 
 <#
 .SYNOPSIS
@@ -7,7 +7,7 @@
 .DESCRIPTION
   Checks whether System Restore is available and enabled on the system
   drive. If enabled, creates a restore point with the description
-  "libps1 pre-configuration". If disabled, optionally enables it first.
+  "winkit pre-configuration". If disabled, optionally enables it first.
 
   Useful as a pre-flight safety step before running larger configuration
   batches. Requires administrator elevation.
@@ -18,7 +18,7 @@
   unavailable.
 
 .PARAMETER Description
-  Restore point description. Defaults to "libps1 pre-configuration".
+  Restore point description. Defaults to "winkit pre-configuration".
 
 .PARAMETER DryRun
   Preview whether a restore point could be created without creating one.
@@ -36,7 +36,7 @@
   PS> ./New-SystemRestorePoint.ps1 -Description "Before Windows Update" -DryRun
 
 .LINK
-  https://github.com/adnoctem/libps1
+  https://github.com/adnoctem/winkit
 
 .NOTES
   Author: Maximilian Gindorfer <info@mvprowess.com>
@@ -51,7 +51,7 @@ param (
 
   [Parameter(Mandatory = $false)]
   [string]
-  $Description = 'libps1 pre-configuration',
+  $Description = 'winkit pre-configuration',
 
   [Parameter(Mandatory = $false)]
   [switch]
@@ -64,7 +64,7 @@ param (
 
 # ---- Module import -----------------------------------------------------------
 $root = Split-Path $PSScriptRoot -Parent
-$module = Join-Path $root 'lib/libps1.psm1'
+$module = Join-Path $root 'lib/winkit.psm1'
 Import-Module $module -Force
 # -----------------------------------------------------------------------------
 

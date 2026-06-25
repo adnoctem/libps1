@@ -7,7 +7,7 @@
 .DESCRIPTION
   Applies a curated set of registry values under HKCU:\Software\Microsoft\Windows\
   CurrentVersion\Explorer that control Explorer's behaviour - folder view, navigation
-  pane, search preferences, and privacy settings.  Uses the libps1 registry helpers
+  pane, search preferences, and privacy settings.  Uses the winkit registry helpers
   for idempotent, safe writes.  -Undo restores Windows defaults.  -Instant restarts
   Explorer so the changes take effect immediately.  -SysPrep mounts the
   default user profile hive (C:\Users\Default\NTUSER.DAT) and writes to it
@@ -110,7 +110,7 @@
   Previews which registry values would be written to the default user profile.
 
 .LINK
-  https://github.com/adnoctem/libps1
+  https://github.com/adnoctem/winkit
 
 .NOTES
   Author: Maximilian Gindorfer <info@mvprowess.com>
@@ -184,7 +184,7 @@ param (
 
 # ---- Module import -----------------------------------------------------------
 $root = Split-Path (Split-Path $PSScriptRoot -Parent) -Parent
-$module = Join-Path $root 'lib/libps1.psm1'
+$module = Join-Path $root 'lib/winkit.psm1'
 Import-Module $module -Force
 # -----------------------------------------------------------------------------
 

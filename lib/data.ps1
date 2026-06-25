@@ -15,7 +15,7 @@ function Convert-Quote {
     PS> Convert-Quote -Path 'C:\config.txt' -To 'Double'
     This command converts all single quotes in the file 'C:\config.txt' to double quotes.
   .LINK
-    https://github.com/adnoctem/libps1/blob/main/lib/data.ps1
+    https://github.com/adnoctem/winkit/blob/main/lib/data.ps1
   .NOTES
     Author: Maximilian Gindorfer <info@mvprowess.com>
     License: MIT
@@ -48,6 +48,8 @@ function Convert-Quote {
 }
 
 function Merge-ObjectArrays {
+  [Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSUseSingularNouns', '', Justification = 'Merge-ObjectArrays describes a two-array merge helper; existing public name is intentionally plural.')]
+
   <#
   .SYNOPSIS
     Merges two arrays of objects, overriding base values with those from overrides.
@@ -67,7 +69,7 @@ function Merge-ObjectArrays {
     PS> Merge-ObjectArrays -Base $base -Overrides $over
     # $base[0].Value is now 99; 'Extra' is silently ignored
   .LINK
-    https://github.com/adnoctem/libps1/blob/main/lib/data.ps1
+    https://github.com/adnoctem/winkit/blob/main/lib/data.ps1
   .NOTES
     Author: Maximilian Gindorfer <info@mvprowess.com>
     License: MIT

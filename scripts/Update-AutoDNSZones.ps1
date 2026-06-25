@@ -70,7 +70,7 @@
   Fetches only the entries listed in config.json and saves their current state.
 
 .LINK
-  https://github.com/adnoctem/libps1
+  https://github.com/adnoctem/winkit
 #>
 
 [CmdletBinding(SupportsShouldProcess = $true)]
@@ -105,7 +105,7 @@ param (
 
 # ---- Module import -----------------------------------------------------------
 $scriptRoot = Split-Path $PSScriptRoot -Parent
-$module = Join-Path $scriptRoot 'lib/libps1.psm1'
+$module = Join-Path $scriptRoot 'lib/winkit.psm1'
 Import-Module $module -Force
 # -----------------------------------------------------------------------------
 
@@ -135,7 +135,7 @@ function Invoke-AutoDNSRequest {
     Headers = @{
       Authorization = "Basic $encodedCreds"
       'X-Domainrobot-Context' = $Context
-      'User-Agent' = 'libps1/1.0'
+      'User-Agent' = 'winkit/1.0'
     }
     ContentType = 'application/json'
   }

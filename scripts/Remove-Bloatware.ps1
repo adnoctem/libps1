@@ -33,7 +33,7 @@
   Set the Windows 11 ConfigureStartPins CSP to an empty pinned list for future
   profiles. This does not modify the current user's start2.bin.
 .PARAMETER IncludeProtected
-  Include packages normally protected by libps1 safety checks.
+  Include packages normally protected by winkit safety checks.
 .PARAMETER Force
   Required together with -IncludeProtected to actually remove protected matches.
 .PARAMETER DryRun
@@ -57,7 +57,7 @@
 
   Include preference-sensitive risky removals and configure empty future Start pins.
 .LINK
-  https://github.com/adnoctem/libps1
+  https://github.com/adnoctem/winkit
 .NOTES
   Author: Maximilian Gindorfer <info@mvprowess.com>
   License: MIT
@@ -124,7 +124,7 @@ param (
 
   [Parameter(
     Mandatory = $false,
-    HelpMessage = 'Include packages normally protected by libps1 safety checks.'
+    HelpMessage = 'Include packages normally protected by winkit safety checks.'
   )]
   [switch]
   $IncludeProtected,
@@ -164,7 +164,7 @@ param (
 
 # ---- Module import -----------------------------------------------------------
 $root = Split-Path (Split-Path $PSScriptRoot -Parent) -Parent
-$module = Join-Path $root 'lib/libps1.psm1'
+$module = Join-Path $root 'lib/winkit.psm1'
 Import-Module $module -Force
 # -----------------------------------------------------------------------------
 

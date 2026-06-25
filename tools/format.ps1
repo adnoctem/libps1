@@ -7,7 +7,7 @@
 .DESCRIPTION
   Runs Invoke-Formatter over .ps1, .psm1, and .psd1 files using the repository
   PSScriptAnalyzerSettings.psd1 file. By default, files are rewritten in place
-  with UTF-8 without BOM and LF line endings.
+  with UTF-8 without BOM and CRLF line endings.
 
   The script intentionally delegates normal whitespace, brace, indentation, and
   casing rules to PSScriptAnalyzer. Its only repository-specific post-processing
@@ -64,7 +64,7 @@
   hashtables.
 
 .LINK
-  https://github.com/adnoctem/libps1
+  https://github.com/adnoctem/winkit
 
 .NOTES
   Author: Maximilian Gindorfer <info@mvprowess.com>
@@ -74,9 +74,9 @@
 [CmdletBinding()]
 param (
   [Parameter(Position = 0)]
-  [string[]]$Path = @($PSScriptRoot),
+  [string[]]$Path = @(Split-Path -Path $PSScriptRoot -Parent),
 
-  [string]$Settings = (Join-Path -Path $PSScriptRoot -ChildPath 'PSScriptAnalyzerSettings.psd1'),
+  [string]$Settings = (Join-Path -Path (Split-Path -Path $PSScriptRoot -Parent) -ChildPath 'PSScriptAnalyzerSettings.psd1'),
 
   [switch]$Check,
 
@@ -106,7 +106,7 @@ if (-not $IncludeSecrets) {
   $excludedDirectories += 'secrets'
 }
 
-$rootFullPath = $ExecutionContext.SessionState.Path.GetUnresolvedProviderPathFromPSPath($PSScriptRoot)
+$rootFullPath = $ExecutionContext.SessionState.Path.GetUnresolvedProviderPathFromPSPath((Split-Path -Path $PSScriptRoot -Parent))
 $utf8NoBom = New-Object System.Text.UTF8Encoding($false)
 $changed = New-Object System.Collections.Generic.List[string]
 $processed = 0
@@ -233,7 +233,8 @@ foreach ($file in $files) {
   if ($formatted -ne $normalizedSource -or $source -ne $normalizedSource) {
     [void]$changed.Add($file.FullName)
     if (-not $Check) {
-      [System.IO.File]::WriteAllText($file.FullName, $formatted, $utf8NoBom)
+      $formattedCrlf = $formatted -replace "`r`n", "`n" -replace "`n", "`r`n"
+      [System.IO.File]::WriteAllText($file.FullName, $formattedCrlf, $utf8NoBom)
       Write-Output "Formatted: $($file.FullName)"
     }
   }

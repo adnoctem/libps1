@@ -1,10 +1,10 @@
 @echo off
 setlocal EnableExtensions EnableDelayedExpansion
 cd /d "%~dp0"
-title libps1 - IR Collector
+title winkit - IR Collector
 
 rem ############################################################################
-rem  libps1 :: bin/ir.cmd
+rem  winkit :: bin/ir.cmd
 rem  Thin launcher -> scripts/Invoke-InformationRetrieval.ps1.
 rem  First positional arg is the profile name (Quick|Full), defaults to Quick.
 rem  Remaining args forwarded verbatim to the PowerShell script.
@@ -45,8 +45,8 @@ exit /b %RC%
 rem === Functions ===
 
 :init_log
-if not exist "%LOCALAPPDATA%\libps1\logs" mkdir "%LOCALAPPDATA%\libps1\logs"
-set "LOG=%LOCALAPPDATA%\libps1\logs\ir.log"
+if not exist "%LOCALAPPDATA%\winkit\logs" mkdir "%LOCALAPPDATA%\winkit\logs"
+set "LOG=%LOCALAPPDATA%\winkit\logs\ir.log"
 exit /b 0
 
 :show_banner
@@ -65,7 +65,7 @@ echo %ORANGE%███████║██║  ██║    ██╔██╗ 
 echo %ORANGE%██╔══██║██║  ██║    ██║╚██╗██║██║   ██║██║        ██║   ██╔══╝  ██║╚██╔╝██║%RESET%
 echo %ORANGE%██║  ██║██████╔╝    ██║ ╚████║╚██████╔╝╚██████╗   ██║   ███████╗██║ ╚═╝ ██║%RESET%
 echo %ORANGE%╚═╝  ╚═╝╚═════╝     ╚═╝  ╚═══╝ ╚═════╝  ╚═════╝   ╚═╝   ╚══════╝╚═╝     ╚═╝%RESET%
-echo     %GRAY%libps1 incident-response collector  ::  profile: %PROFILE_NAME%%RESET%
+echo     %GRAY%winkit incident-response collector  ::  profile: %PROFILE_NAME%%RESET%
 echo.
 echo This script collects evidence only. It does not clean malware.
 echo Run this from USB as Administrator while the PC is offline.
@@ -74,7 +74,7 @@ exit /b 0
 
 :usage
 echo.
-echo libps1 :: ir.cmd - Incident-Response Evidence Collector
+echo winkit :: ir.cmd - Incident-Response Evidence Collector
 echo ========================================================
 echo.
 echo Collects host information, Defender state, event logs, scheduled

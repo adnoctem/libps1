@@ -1,5 +1,6 @@
-﻿#Requires -Version 5.0
+#Requires -Version 5.0
 
+[Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSUseSingularNouns', '', Justification = 'Metadata is a singular mass noun; there is no other option here.')]
 [Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSUseApprovedVerbs', '', Justification = 'Build-GroupPolicyBackup is the intended entry verb for this build pipeline.')]
 [Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSReviewUnusedParameter', 'StagingRoot', Justification = 'Stub parameter - TODO(1) stubs the function body.')]
 [Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSReviewUnusedParameter', 'BackupDir', Justification = 'Stub parameter - TODO(2) stubs the function body.')]
@@ -12,7 +13,7 @@
 
 <#
 .SYNOPSIS
-  Compiles libps1 policy text sources into a domain-importable GPO backup.
+  Compiles winkit policy text sources into a domain-importable GPO backup.
 
 .DESCRIPTION
   ============================================================================
@@ -24,7 +25,7 @@
 
     [ ] TODO(1): Vendor a reference GPO backup skeleton. Create an empty GPO
                  in a test domain (GPMC -> right-click Group Policy Objects ->
-                 New -> name it 'libps1-skeleton' -> Back Up), then commit the
+                 New -> name it 'winkit-skeleton' -> Back Up), then commit the
                  resulting backup folder under resources/policies/skeleton/.
                  We wrap the LGPO-built registry.pol into a COPY of this
                  skeleton rather than constructing Backup.xml / bkupInfo.xml /
@@ -41,7 +42,7 @@
 
   Once complete, the produced backup goes to dist/GP/gpo-backups/ and is
   consumed by the per-company AD repo's Import-GPO / New-GPLink workflow -
-  NOT by libps1 itself. libps1 produces the artifact; it never touches a
+  NOT by winkit itself. winkit produces the artifact; it never touches a
   domain.
   ============================================================================
 
@@ -55,18 +56,18 @@
 
 .PARAMETER DisplayName
   The GPO display name baked into the backup metadata. This is what a domain
-  admin sees in GPMC after import. Defaults to 'libps1 Baseline'.
+  admin sees in GPMC after import. Defaults to 'winkit Baseline'.
 
 .PARAMETER SkeletonPath
   Path to the vendored reference GPO backup skeleton (see TODO(1)). Defaults
   to resources/policies/skeleton/.
 
 .EXAMPLE
-  .\Build-GroupPolicyBackup.ps1 -DisplayName 'libps1 Baseline 2026-06'
+  .\Build-GroupPolicyBackup.ps1 -DisplayName 'winkit Baseline 2026-06'
   (Once complete) compiles all policy text sources into a named GPO backup.
 
 .LINK
-  https://github.com/adnoctem/libps1
+  https://github.com/adnoctem/winkit
 
 .NOTES
   Author: Maximilian Gindorfer <info@mvprowess.com>
@@ -87,7 +88,7 @@ param (
 
   [Parameter(Mandatory = $false)]
   [string]
-  $DisplayName = 'libps1 Baseline',
+  $DisplayName = 'winkit Baseline',
 
   [Parameter(Mandatory = $false)]
   [string]
@@ -96,7 +97,7 @@ param (
 
 # ---- Module import -----------------------------------------------------------
 $root = Split-Path $PSScriptRoot -Parent
-$module = Join-Path $root 'lib/libps1.psm1'
+$module = Join-Path $root 'lib/winkit.psm1'
 Import-Module $module -Force
 # -----------------------------------------------------------------------------
 
@@ -204,7 +205,7 @@ function Build-GroupPolicyBackup {
   New-Item -ItemType Directory -Path $Output -Force | Out-Null
 
   # --- Pending pipeline (each call currently throws by design) ---
-  $staging = Join-Path $env:TEMP "libps1-gpo-build-$(New-Guid)"
+  $staging = Join-Path $env:TEMP "winkit-gpo-build-$(New-Guid)"
 
   $backup = Initialize-FromSkeleton -Skeleton $Skeleton -StagingRoot $staging      # TODO(1)
   $pol = ConvertTo-RegistryPol   -Sources  $Sources  -WorkDir     $staging      # TODO(2)

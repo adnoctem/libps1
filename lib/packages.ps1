@@ -28,7 +28,7 @@ function Test-PackageAdministrator {
       PS> Test-PackageAdministrator
       Returns True when the current process is elevated.
     .LINK
-      https://github.com/adnoctem/libps1/lib/packages.ps1
+      https://github.com/adnoctem/winkit/lib/packages.ps1
     .NOTES
       Author: Maximilian Gindorfer <info@mvprowess.com>
       License: MIT
@@ -67,7 +67,7 @@ function New-PackageLifecycleResult {
     .EXAMPLE
       PS> New-PackageLifecycleResult -Target 'Microsoft.GetHelp' -Source 'UPFAppxPackage' -Action 'Uninstall' -Status 'Skipped' -SkippedReason 'NoMatch'
     .LINK
-      https://github.com/adnoctem/libps1/lib/packages.ps1
+      https://github.com/adnoctem/winkit/lib/packages.ps1
     .NOTES
       Author: Maximilian Gindorfer <info@mvprowess.com>
       License: MIT
@@ -102,7 +102,7 @@ function Get-InstalledProgramCount {
       Returns the number of registered Win32 programs visible to normal
       uninstall inventory views.
     .LINK
-      https://github.com/adnoctem/libps1/lib/packages.ps1
+      https://github.com/adnoctem/winkit/lib/packages.ps1
     .NOTES
       Author: Maximilian Gindorfer <info@mvprowess.com>
       License: MIT
@@ -128,7 +128,7 @@ function Get-AppxPackageCount {
       PS> Get-AppxPackageCount
       Returns the current user's user-facing UPF AppX/MSIX package count.
     .LINK
-      https://github.com/adnoctem/libps1/lib/packages.ps1
+      https://github.com/adnoctem/winkit/lib/packages.ps1
     .NOTES
       Author: Maximilian Gindorfer <info@mvprowess.com>
       License: MIT
@@ -154,7 +154,7 @@ function Get-PackageCount {
       PS> Get-PackageCount
       Returns Programs, Appx, and Total package counts.
     .LINK
-      https://github.com/adnoctem/libps1/lib/packages.ps1
+      https://github.com/adnoctem/winkit/lib/packages.ps1
     .NOTES
       Author: Maximilian Gindorfer <info@mvprowess.com>
       License: MIT
@@ -180,7 +180,7 @@ function Get-Win32Program {
       Returns normalized Win32 program inventory from Windows uninstall registry keys.
     .DESCRIPTION
       Reads machine-wide 64-bit, machine-wide 32-bit and current-user uninstall
-      keys using libps1 registry helpers, and returns normalized program
+      keys using winkit registry helpers, and returns normalized program
       metadata suitable for lifecycle operations.
     .PARAMETER Name
       Optional wildcard DisplayName filter. When omitted, all visible Win32
@@ -196,7 +196,7 @@ function Get-Win32Program {
       Returns OneDrive-related uninstall entries, including hidden system
       component registrations.
     .LINK
-      https://github.com/adnoctem/libps1/lib/packages.ps1
+      https://github.com/adnoctem/winkit/lib/packages.ps1
     .NOTES
       Author: Maximilian Gindorfer <info@mvprowess.com>
       License: MIT
@@ -282,7 +282,7 @@ function Find-Win32Program {
     .EXAMPLE
       PS> Find-Win32Program -RegistryPath 'HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\SomeApp'
     .LINK
-      https://github.com/adnoctem/libps1/lib/packages.ps1
+      https://github.com/adnoctem/winkit/lib/packages.ps1
     .NOTES
       Author: Maximilian Gindorfer <info@mvprowess.com>
       License: MIT
@@ -350,7 +350,7 @@ function Install-Win32Program {
     .EXAMPLE
       PS> Install-Win32Program -Path 'C:\Installers\AppSetup.exe' -ArgumentList '/quiet' -DryRun
     .LINK
-      https://github.com/adnoctem/libps1/lib/packages.ps1
+      https://github.com/adnoctem/winkit/lib/packages.ps1
     .NOTES
       Author: Maximilian Gindorfer <info@mvprowess.com>
       License: MIT
@@ -424,7 +424,7 @@ function Uninstall-Win32Program {
     .EXAMPLE
       PS> Find-Win32Program -Name '*Example App*' | Uninstall-Win32Program -Quiet
     .LINK
-      https://github.com/adnoctem/libps1/lib/packages.ps1
+      https://github.com/adnoctem/winkit/lib/packages.ps1
     .NOTES
       Author: Maximilian Gindorfer <info@mvprowess.com>
       License: MIT
@@ -545,7 +545,7 @@ function Get-UPFAppxPackage {
     .EXAMPLE
       PS> Get-UPFAppxPackage -Name 'Microsoft.Bing*' -Installed -Provisioned
     .LINK
-      https://github.com/adnoctem/libps1/lib/packages.ps1
+      https://github.com/adnoctem/winkit/lib/packages.ps1
     .NOTES
       Author: Maximilian Gindorfer <info@mvprowess.com>
       License: MIT
@@ -663,7 +663,7 @@ function Find-UPFAppxPackage {
     .EXAMPLE
       PS> 'Microsoft.GetHelp','Microsoft.BingWeather*' | Find-UPFAppxPackage -Installed
     .LINK
-      https://github.com/adnoctem/libps1/lib/packages.ps1
+      https://github.com/adnoctem/winkit/lib/packages.ps1
     .NOTES
       Author: Maximilian Gindorfer <info@mvprowess.com>
       License: MIT
@@ -739,7 +739,7 @@ function Test-UPFAppxPackageRemovalSafety {
     .EXAMPLE
       PS> Get-UPFAppxPackage -Name 'Microsoft.WindowsStore' | Test-UPFAppxPackageRemovalSafety
     .LINK
-      https://github.com/adnoctem/libps1/lib/packages.ps1
+      https://github.com/adnoctem/winkit/lib/packages.ps1
     .NOTES
       Author: Maximilian Gindorfer <info@mvprowess.com>
       License: MIT
@@ -810,7 +810,7 @@ function Install-UPFAppxPackage {
     .EXAMPLE
       PS> Install-UPFAppxPackage -Path 'C:\Packages\Example.msixbundle' -Provisioned -SkipLicense
     .LINK
-      https://github.com/adnoctem/libps1/lib/packages.ps1
+      https://github.com/adnoctem/winkit/lib/packages.ps1
     .NOTES
       Author: Maximilian Gindorfer <info@mvprowess.com>
       License: MIT
@@ -887,7 +887,7 @@ function Update-UPFAppxPackage {
     .EXAMPLE
       PS> Update-UPFAppxPackage -Path 'C:\Packages\Example-2.0.msix'
     .LINK
-      https://github.com/adnoctem/libps1/lib/packages.ps1
+      https://github.com/adnoctem/winkit/lib/packages.ps1
     .NOTES
       Author: Maximilian Gindorfer <info@mvprowess.com>
       License: MIT
@@ -926,7 +926,7 @@ function Repair-UPFAppxPackage {
     .EXAMPLE
       PS> Repair-UPFAppxPackage -Name 'Microsoft.DesktopAppInstaller*' -DryRun
     .LINK
-      https://github.com/adnoctem/libps1/lib/packages.ps1
+      https://github.com/adnoctem/winkit/lib/packages.ps1
     .NOTES
       Author: Maximilian Gindorfer <info@mvprowess.com>
       License: MIT
@@ -987,7 +987,7 @@ function Reset-UPFAppxPackage {
     .EXAMPLE
       PS> Reset-UPFAppxPackage -Name 'Microsoft.GetHelp'
     .LINK
-      https://github.com/adnoctem/libps1/lib/packages.ps1
+      https://github.com/adnoctem/winkit/lib/packages.ps1
     .NOTES
       Author: Maximilian Gindorfer <info@mvprowess.com>
       License: MIT
@@ -1049,7 +1049,7 @@ function Uninstall-UPFAppxPackage {
     .EXAMPLE
       PS> Find-UPFAppxPackage -Pattern 'Microsoft.ZuneMusic' -Installed | Where-Object Matched | ForEach-Object Package | Uninstall-UPFAppxPackage -DryRun
     .LINK
-      https://github.com/adnoctem/libps1/lib/packages.ps1
+      https://github.com/adnoctem/winkit/lib/packages.ps1
     .NOTES
       Author: Maximilian Gindorfer <info@mvprowess.com>
       License: MIT
@@ -1139,7 +1139,7 @@ function Uninstall-UPFAppxPackageSet {
     .EXAMPLE
       PS> Uninstall-UPFAppxPackageSet -Pattern 'Microsoft.GetHelp','Microsoft.BingWeather*' -Provisioned -PassThru
     .LINK
-      https://github.com/adnoctem/libps1/lib/packages.ps1
+      https://github.com/adnoctem/winkit/lib/packages.ps1
     .NOTES
       Author: Maximilian Gindorfer <info@mvprowess.com>
       License: MIT
@@ -1218,7 +1218,7 @@ function Install-UPFAppxPackageSet {
     .EXAMPLE
       PS> Install-UPFAppxPackageSet -Path 'C:\Packages\App1.msix','C:\Packages\App2.msix' -DryRun
     .LINK
-      https://github.com/adnoctem/libps1/lib/packages.ps1
+      https://github.com/adnoctem/winkit/lib/packages.ps1
     .NOTES
       Author: Maximilian Gindorfer <info@mvprowess.com>
       License: MIT
@@ -1251,7 +1251,7 @@ function Install-Win32ProgramFromWinGet {
       Installs a Win32 program through the Microsoft.WinGet.Client provider.
     .DESCRIPTION
       Uses Microsoft.WinGet.Client when available to install an application by
-      name or exact package ID. The libps1 function name is intentionally
+      name or exact package ID. The winkit function name is intentionally
       Win32ProgramFromWinGet so it does not shadow provider cmdlets exported by
       Microsoft.WinGet.Client.
     .PARAMETER Name
@@ -1269,7 +1269,7 @@ function Install-Win32ProgramFromWinGet {
     .EXAMPLE
       PS> Install-Win32ProgramFromWinGet -Name 'Visual Studio Code' -DryRun
     .LINK
-      https://github.com/adnoctem/libps1/lib/packages.ps1
+      https://github.com/adnoctem/winkit/lib/packages.ps1
     .NOTES
       Author: Maximilian Gindorfer <info@mvprowess.com>
       License: MIT
@@ -1340,7 +1340,7 @@ function Update-Win32ProgramFromWinGet {
     .EXAMPLE
       PS> Update-Win32ProgramFromWinGet -All -DryRun
     .LINK
-      https://github.com/adnoctem/libps1/lib/packages.ps1
+      https://github.com/adnoctem/winkit/lib/packages.ps1
     .NOTES
       Author: Maximilian Gindorfer <info@mvprowess.com>
       License: MIT
@@ -1400,7 +1400,7 @@ function Uninstall-Win32ProgramFromWinGet {
       Uninstalls a Win32 program through the Microsoft.WinGet.Client provider.
     .DESCRIPTION
       Uses Microsoft.WinGet.Client when available to uninstall an application by
-      name or exact package ID. The wrapper returns libps1 lifecycle result
+      name or exact package ID. The wrapper returns winkit lifecycle result
       objects while avoiding command-name collisions with the provider module.
     .PARAMETER Name
       Package name to uninstall through WinGet.
@@ -1413,7 +1413,7 @@ function Uninstall-Win32ProgramFromWinGet {
     .EXAMPLE
       PS> Uninstall-Win32ProgramFromWinGet -Name 'Microsoft OneDrive'
     .LINK
-      https://github.com/adnoctem/libps1/lib/packages.ps1
+      https://github.com/adnoctem/winkit/lib/packages.ps1
     .NOTES
       Author: Maximilian Gindorfer <info@mvprowess.com>
       License: MIT

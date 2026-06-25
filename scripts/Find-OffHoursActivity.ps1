@@ -99,7 +99,7 @@
   would be queried without making changes.
 
 .LINK
-  https://github.com/adnoctem/libps1
+  https://github.com/adnoctem/winkit
 
 .NOTES
   Author: Maximilian Gindorfer <info@mvprowess.com>
@@ -171,7 +171,7 @@ param (
 
 # ---- Module import -----------------------------------------------------------
 $root = Split-Path (Split-Path $PSScriptRoot -Parent) -Parent
-$module = Join-Path $root 'lib/libps1.psm1'
+$module = Join-Path $root 'lib/winkit.psm1'
 Import-Module $module -Force
 # -----------------------------------------------------------------------------
 
@@ -369,7 +369,7 @@ function Copy-HistoryDatabase {
     [string]$ProfileName
   )
 
-  $_tempRoot = Join-Path -Path $env:TEMP -ChildPath 'libps1\Find-OffHoursActivity'
+  $_tempRoot = Join-Path -Path $env:TEMP -ChildPath 'winkit\Find-OffHoursActivity'
   if (-not (Test-Path -LiteralPath $_tempRoot -PathType Container)) {
     $null = New-Item -Path $_tempRoot -ItemType Directory -Force -ErrorAction SilentlyContinue
   }

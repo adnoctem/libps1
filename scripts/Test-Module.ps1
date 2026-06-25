@@ -8,7 +8,7 @@
 .EXAMPLE
   PS> ./archive-outlook.ps1 -StartDate '2024-01-01' -EndDate '2024-03-31' -ArchiveFolder 'Archive/2024 Q1'
 .LINK
-  https://github.com/adnoctem/libps1
+  https://github.com/adnoctem/winkit
 .NOTES
   Author: Maximilian Gindorfer <info@mvprowess.com>
   License: MIT
@@ -16,7 +16,7 @@
 
 # ---- Module import ------------------------------------
 $root = Split-Path $PSScriptRoot -Parent
-$module = Join-Path $root 'lib/libps1.psm1'
+$module = Join-Path $root 'lib/winkit.psm1'
 Import-Module $module -Force
 # -------------------------------------------------------
 
@@ -25,7 +25,7 @@ Import-Module $module -Force
 # Write-Log "This is some bs" -Color Cyan -Timestamps
 # Write-Log "`$root would have been: $root"
 # Write-Log "`$module would have been: $module"
-# Write-Log "Now we're using $PSScriptRoot\..\lib\libps1.psd1"
+# Write-Log "Now we're using $PSScriptRoot\..\lib\winkit.psd1"
 
 # ConvertFrom-HTMLtoWord -FileHTML "C:\Users\Admin\tmp\Pressemitteilung\test.html" -OutputFile "C:\Users\Admin\tmp\Pressemitteilung\test.docx" -Show | Out-Null
 # Convert-HTMLToPDF -FilePath '/tmp/test.html' -OutputFilePath '/tmp/test-out.pdf'

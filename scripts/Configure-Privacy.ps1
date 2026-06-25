@@ -4,7 +4,7 @@
 .SYNOPSIS
   Configures Windows privacy, suggestions, activity history, clipboard, and input defaults.
 .DESCRIPTION
-  Applies a broad privacy-oriented registry profile using libps1 helpers. This
+  Applies a broad privacy-oriented registry profile using winkit helpers. This
   script intentionally excludes app permission defaults and diagnostic tracking
   service transport, which are handled by dedicated scripts. Automatic Windows
   Content Delivery and suggested app provisioning are handled separately by
@@ -41,7 +41,7 @@
   PS> ./Configure-Privacy.ps1 -ExportConfig -ExportPath '.\privacy.json'
   Exports the default privacy settings template to JSON.
 .LINK
-  https://github.com/adnoctem/libps1
+  https://github.com/adnoctem/winkit
 .NOTES
   Author: Maximilian Gindorfer <info@mvprowess.com>
   License: MIT
@@ -107,7 +107,7 @@ param (
 
 # ---- Module import -----------------------------------------------------------
 $root = Split-Path (Split-Path $PSScriptRoot -Parent) -Parent
-$module = Join-Path $root 'lib/libps1.psm1'
+$module = Join-Path $root 'lib/winkit.psm1'
 Import-Module $module -Force
 # -----------------------------------------------------------------------------
 

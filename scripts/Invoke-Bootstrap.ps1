@@ -1,8 +1,8 @@
-﻿#Requires -Version 5.0
+#Requires -Version 5.0
 
 <#
 .SYNOPSIS
-  Bootstraps a fresh Windows machine with libps1 prerequisites and PATH
+  Bootstraps a fresh Windows machine with winkit prerequisites and PATH
   registration.
 
 .DESCRIPTION
@@ -40,7 +40,7 @@
   PS> ./Invoke-Bootstrap.ps1 -VCRedistVersions 14.0,12.0 -DryRun
 
 .LINK
-  https://github.com/adnoctem/libps1
+  https://github.com/adnoctem/winkit
 
 .NOTES
   Author: Maximilian Gindorfer <info@mvprowess.com>
@@ -73,7 +73,7 @@ param (
 
 # ---- Module import -----------------------------------------------------------
 $root = Split-Path $PSScriptRoot -Parent
-$module = Join-Path $root 'lib/libps1.psm1'
+$module = Join-Path $root 'lib/winkit.psm1'
 Import-Module $module -Force
 # -----------------------------------------------------------------------------
 
@@ -90,7 +90,7 @@ if (-not (Read-ProcessElevation)) {
 $_results = New-Object System.Collections.ArrayList
 
 # ---- Script-local: Add-SystemPath -------------------------------------------
-# CHANGE-NOTE: if libps1 exposes a canonical Add-SystemPath function, prefer
+# CHANGE-NOTE: if winkit exposes a canonical Add-SystemPath function, prefer
 # that and replace this local helper.
 function Add-SystemPath {
   [CmdletBinding(SupportsShouldProcess = $true)]
@@ -159,7 +159,7 @@ function Invoke-BootstrapStep {
 }
 
 # ---- Execution â€" dependency order matters -----------------------------------
-Write-Log -Message 'Starting libps1 bootstrap.' -Color Cyan
+Write-Log -Message 'Starting winkit bootstrap.' -Color Cyan
 
 $_stepResults = @{}
 

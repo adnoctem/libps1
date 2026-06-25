@@ -7,7 +7,7 @@ function Get-UserInfo {
     .EXAMPLE
       PS> Get-UserInfo
     .LINK
-      https://github.com/adnoctem/libps1/lib/user.ps1
+      https://github.com/adnoctem/winkit/lib/user.ps1
     .NOTES
       Author: Maximilian Gindorfer <info@mvprowess.com>
       License: MIT
@@ -37,7 +37,7 @@ function Get-UserSID {
     .EXAMPLE
       PS> Get-UserSID -UserName "DOMAIN\Username"
     .LINK
-      https://github.com/adnoctem/libps1/lib/user.ps1
+      https://github.com/adnoctem/winkit/lib/user.ps1
     .NOTES
       Author: Maximilian Gindorfer <info@mvprowess.com>
       License: MIT

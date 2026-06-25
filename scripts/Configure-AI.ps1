@@ -2,12 +2,12 @@
 
 <#
 .SYNOPSIS
-  Configures Windows AI-related features to the libps1 preferred state.
+  Configures Windows AI-related features to the winkit preferred state.
 
 .DESCRIPTION
   Applies a curated set of registry values that disable or constrain Windows 11
   AI integrations such as Copilot, Recall, Click To Do, Edge AI, Paint AI,
-  Notepad AI and the Windows AI service auto-start behavior. Uses the libps1
+  Notepad AI and the Windows AI service auto-start behavior. Uses the winkit
   registry helpers for idempotent writes. -Undo removes the configured values,
   matching the delete-on-undo behavior documented in the source material.
   -SysPrep mounts the default user profile hive and writes HKCU-backed settings
@@ -62,7 +62,7 @@
   inherit them.
 
 .LINK
-  https://github.com/adnoctem/libps1
+  https://github.com/adnoctem/winkit
 
 .NOTES
   Author: Maximilian Gindorfer <info@mvprowess.com>
@@ -129,7 +129,7 @@ param (
 
 # ---- Module import -----------------------------------------------------------
 $root = Split-Path (Split-Path $PSScriptRoot -Parent) -Parent
-$module = Join-Path $root 'lib/libps1.psm1'
+$module = Join-Path $root 'lib/winkit.psm1'
 Import-Module $module -Force
 # -----------------------------------------------------------------------------
 

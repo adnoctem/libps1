@@ -5,7 +5,7 @@
   Orchestrates Windows configuration scripts according to a named profile.
 
 .DESCRIPTION
-  Single entry point for running libps1 configuration scripts as a set.
+  Single entry point for running winkit configuration scripts as a set.
   Rather than maintaining parallel launcher scripts per machine type, this
   orchestrator holds a manifest mapping profiles (Desktop / Server / DC /
   Minimal) to the ordered list of config scripts that profile should run.
@@ -50,7 +50,7 @@
   Lists the Desktop profile scripts in execution order and exits.
 
 .LINK
-  https://github.com/adnoctem/libps1
+  https://github.com/adnoctem/winkit
 
 .NOTES
   Author: Maximilian Gindorfer <info@mvprowess.com>
@@ -83,7 +83,7 @@ param (
 
 # ---- Module import -----------------------------------------------------------
 $root = Split-Path $PSScriptRoot -Parent
-$module = Join-Path $root 'lib/libps1.psm1'
+$module = Join-Path $root 'lib/winkit.psm1'
 Import-Module $module -Force
 # -----------------------------------------------------------------------------
 

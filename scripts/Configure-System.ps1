@@ -4,7 +4,7 @@
 .SYNOPSIS
   Configures Windows system, power, storage, accessibility, and shell defaults.
 .DESCRIPTION
-  Applies a compact system configuration profile using libps1 registry helpers.
+  Applies a compact system configuration profile using winkit registry helpers.
   This script groups broad system toggles that are too small to justify many
   single-purpose scripts, including power behavior, automatic device encryption,
   accessibility shortcuts, Storage Sense, shell behavior, and pointer defaults.
@@ -38,7 +38,7 @@
   PS> ./Configure-System.ps1 -ExportConfig -ExportPath '.\system.json'
   Exports the default system settings template.
 .LINK
-  https://github.com/adnoctem/libps1
+  https://github.com/adnoctem/winkit
 .NOTES
   Author: Maximilian Gindorfer <info@mvprowess.com>
   License: MIT
@@ -104,7 +104,7 @@ param (
 
 # ---- Module import -----------------------------------------------------------
 $root = Split-Path (Split-Path $PSScriptRoot -Parent) -Parent
-$module = Join-Path $root 'lib/libps1.psm1'
+$module = Join-Path $root 'lib/winkit.psm1'
 Import-Module $module -Force
 # -----------------------------------------------------------------------------
 

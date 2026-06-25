@@ -1,10 +1,10 @@
 @echo off
 setlocal EnableExtensions EnableDelayedExpansion
 cd /d "%~dp0"
-title libps1 - Server Optimizer
+title winkit - Server Optimizer
 
 rem ############################################################################
-rem  libps1 :: bin/server-optimizer.cmd
+rem  winkit :: bin/server-optimizer.cmd
 rem  Thin launcher -> scripts/Invoke-Optimizer.ps1.
 rem  Profile is always Server.  Remaining args forwarded to the PowerShell
 rem  script.  For other profiles, use optimizer.cmd or the .ps1 directly.
@@ -39,8 +39,8 @@ exit /b %RC%
 rem === Functions ===
 
 :init_log
-if not exist "%LOCALAPPDATA%\libps1\logs" mkdir "%LOCALAPPDATA%\libps1\logs"
-set "LOG=%LOCALAPPDATA%\libps1\logs\server-optimizer.log"
+if not exist "%LOCALAPPDATA%\winkit\logs" mkdir "%LOCALAPPDATA%\winkit\logs"
+set "LOG=%LOCALAPPDATA%\winkit\logs\server-optimizer.log"
 exit /b 0
 
 :show_banner
@@ -56,13 +56,13 @@ echo %ORANGE%███████║██║  ██║    ██╔██╗ 
 echo %ORANGE%██╔══██║██║  ██║    ██║╚██╗██║██║   ██║██║        ██║   ██╔══╝  ██║╚██╔╝██║%RESET%
 echo %ORANGE%██║  ██║██████╔╝    ██║ ╚████║╚██████╔╝╚██████╗   ██║   ███████╗██║ ╚═╝ ██║%RESET%
 echo %ORANGE%╚═╝  ╚═╝╚═════╝     ╚═╝  ╚═══╝ ╚═════╝  ╚═════╝   ╚═╝   ╚══════╝╚═╝     ╚═╝%RESET%
-echo     %GRAY%libps1 machine configuration  ::  profile: %PROFILE_NAME%%RESET%
+echo     %GRAY%winkit machine configuration  ::  profile: %PROFILE_NAME%%RESET%
 echo.
 exit /b 0
 
 :usage
 echo.
-echo libps1 :: server-optimizer.cmd - Server Configuration Orchestrator
+echo winkit :: server-optimizer.cmd - Server Configuration Orchestrator
 echo =================================================================
 echo.
 echo Runs a conservative Server configuration profile.  Applies registry
