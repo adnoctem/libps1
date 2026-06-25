@@ -1,4 +1,5 @@
 #Requires -Version 5.0
+#Requires -RunAsAdministrator
 
 <#
 .SYNOPSIS
@@ -89,11 +90,6 @@ if (Test-Path -LiteralPath $regPath) {
     if ($PassThru -or $DryRun) { $_results }
     exit 0
   }
-}
-
-if (-not (Read-ProcessElevation)) {
-  Write-Log -Message 'Administrator privileges required to install VC++ redistributables.' -Color Red
-  exit 1
 }
 
 $urls = @{

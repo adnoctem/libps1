@@ -1,4 +1,5 @@
 #Requires -Version 5.0
+#Requires -RunAsAdministrator
 
 <#
 .SYNOPSIS
@@ -75,11 +76,6 @@ if ($DryRun) {
 }
 
 $_results = New-Object System.Collections.ArrayList
-
-if (-not (Read-ProcessElevation)) {
-  Write-Log -Message 'Administrator privileges required to modify Compact OS state.' -Color Red
-  exit 1
-}
 
 # ---- Query current state ----------------------------------------------------
 try {

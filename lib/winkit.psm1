@@ -75,7 +75,7 @@ $publicFunctions = @(
 
   # permissions.ps1
   'Request-AdministratorPrivilege',
-  'Read-ProcessElevation',
+  'Test-Elevation',
 
   # registry.ps1
   'ConvertTo-RegistryProviderPath',

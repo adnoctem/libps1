@@ -141,7 +141,7 @@
     'Get-TemporaryPath',
     'Get-NewPath',
     'Request-AdministratorPrivilege',
-    'Read-ProcessElevation',
+    'Test-Elevation',
     'ConvertTo-RegistryProviderPath',
     'Resolve-RegistryPath',
     'Get-RegistryKey',

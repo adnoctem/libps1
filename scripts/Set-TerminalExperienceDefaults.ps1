@@ -97,6 +97,12 @@ if (-not $CurrentUser -and -not $AllExistingUsers -and -not $DefaultUser) {
   $DefaultUser = $true
 }
 
+# Elevation guard: -AllExistingUsers / -DefaultUser mount user hives (requires admin)
+if (($AllExistingUsers -or $DefaultUser) -and -not (Test-Elevation)) {
+  Write-Error '-AllExistingUsers and -DefaultUser require administrator privileges. Run elevated or use -CurrentUser only.'
+  exit 1
+}
+
 if ($DryRun) {
   $WhatIfPreference = $true
   Write-Log -Message "DRY RUN - no terminal defaults will be changed`n" -Color Yellow
@@ -105,15 +111,6 @@ if ($DryRun) {
 $terminalConsoleGuid = '{2EACA947-7F5F-4CFA-BA87-8F7FBEEFBE69}'
 $terminalTerminalGuid = '{E12CFF52-A866-4C77-9A90-F570A7AA2C6B}'
 $results = New-Object System.Collections.ArrayList
-
-function Test-TerminalExperienceAdministrator {
-  [OutputType([bool])]
-  param()
-
-  $_identity = [Security.Principal.WindowsIdentity]::GetCurrent()
-  $_principal = New-Object Security.Principal.WindowsPrincipal($_identity)
-  return $_principal.IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)
-}
 
 function Set-TerminalRegistryValue {
   [CmdletBinding(SupportsShouldProcess = $true)]
@@ -174,7 +171,7 @@ function Install-TerminalExperiencePackage {
     [System.Collections.ArrayList]$Results
   )
 
-  $_installed = if (Test-TerminalExperienceAdministrator) {
+  $_installed = if (Test-Elevation) {
     @(Get-AppxPackage -AllUsers -Name 'Microsoft.WindowsTerminal' -ErrorAction SilentlyContinue)
   }
   else {
@@ -250,10 +247,7 @@ if ($AllExistingUsers) {
 }
 
 if ($DefaultUser) {
-  if (-not (Test-TerminalExperienceAdministrator)) {
-    Add-OperationResult -Results $results -Target 'Registry::HKEY_USERS\DefaultUser' -Scope 'DefaultUser' -Action 'SetValue' -Status 'Skipped' -Detail 'RequiresElevation'
-  }
-  elseif ($DryRun) {
+  if ($DryRun) {
     Add-OperationResult -Results $results -Target 'Registry::HKEY_USERS\DefaultUser\Console\%%Startup' -Scope 'DefaultUser' -Action 'SetValue' -Status 'Skipped' -Detail 'DryRun'
   }
   elseif (-not $PSCmdlet.ShouldProcess('Registry::HKEY_USERS\DefaultUser', 'Load default user hive and set terminal defaults')) {

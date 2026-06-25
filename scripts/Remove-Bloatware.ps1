@@ -271,15 +271,6 @@ $_useDetailedPackageConfirm = $PSBoundParameters.ContainsKey('Confirm') -and [bo
 $_wingetAgreementArguments = @('--accept-source-agreements')
 $_wingetUninstallArguments = @('--silent', '--accept-source-agreements', '--accept-package-agreements', '--force')
 
-function Test-BloatwareAdministrator {
-  [OutputType([bool])]
-  param()
-
-  $_identity = [Security.Principal.WindowsIdentity]::GetCurrent()
-  $_principal = New-Object Security.Principal.WindowsPrincipal($_identity)
-  return $_principal.IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)
-}
-
 function Test-BloatwarePattern {
   param (
     [Parameter(Mandatory = $true)]
@@ -475,7 +466,7 @@ function Invoke-BloatwareCapabilityRemove {
     [string]$Pattern
   )
 
-  if (-not (Test-BloatwareAdministrator)) {
+  if (-not (Test-Elevation)) {
     Add-OperationResult -Results $Results -Target $Pattern -Source 'Capability' -Action 'Remove' -Status 'Skipped' -Detail 'RequiresElevation'
     return
   }
@@ -752,7 +743,7 @@ Write-Log -Message "Pattern count: $($_patterns.Count)" -Color Gray
 
 if (-not $SkipProvisioned) {
   Write-Log -Message 'Pass 1/7: removing provisioned UPF AppX/MSIX packages ...' -Color Yellow
-  if (-not (Test-BloatwareAdministrator)) {
+  if (-not (Test-Elevation)) {
     Add-OperationResult -Results $_results -Target 'ProvisionedPackages' -Source 'UPFAppxPackage' -Action 'Uninstall' -Status 'Skipped' -Detail 'RequiresElevation'
   }
   else {
@@ -777,7 +768,7 @@ else {
 }
 
 Write-Log -Message 'Pass 2/7: removing installed UPF AppX/MSIX packages ...' -Color Yellow
-if ($AllUsers -and -not (Test-BloatwareAdministrator)) {
+if ($AllUsers -and -not (Test-Elevation)) {
   Add-OperationResult -Results $_results -Target 'InstalledPackages' -Source 'UPFAppxPackage' -Action 'Uninstall' -Status 'Skipped' -Detail 'AllUsersRequiresElevation'
 }
 else {

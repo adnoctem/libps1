@@ -1,57 +1,96 @@
 <#
   Initial setup script used to download PowerShell module dependencies
   defined in the project manifest and set up the project for local use.
+
+  .PARAMETER Force
+    Reinstall all modules even if the required version is already present.
 #>
 
+[CmdletBinding()]
 param(
   [switch]$Force
 )
 
-# ---- Configure module -----------------------------------------
+# ---- Ensure NuGet provider (required by PowerShellGet) ----------------------
+$null = Install-PackageProvider -Name NuGet -Force -Scope CurrentUser -ErrorAction SilentlyContinue
 
+# ---- Configure module -------------------------------------------------------
 $RepositoryRoot = Split-Path -Path $PSScriptRoot -Parent
 $manifestPath = Join-Path -Path $RepositoryRoot -ChildPath 'lib/winkit.psd1'
-$manifest = Test-ModuleManifest -Path $manifestPath -ErrorAction SilentlyContinue
+$manifest = Test-ModuleManifest -Path $manifestPath -ErrorAction Stop
 
 Write-Host "Using manifest: $manifest"
 
 foreach ($mod in $manifest.RequiredModules) {
-  # RequiredModules entries can be strings or hashtables
   if ($mod -is [string]) {
     $name = $mod
-    $version = $null
+    $minVer = $null
+    $exactVer = $null
   }
   else {
     $name = $mod.Name
-    $version = $mod.ModuleVersion
+    $minVer = $mod.Version          # from ModuleVersion key (minimum)
+    $exactVer = $mod.RequiredVersion # from RequiredVersion key (exact)
   }
 
   Write-Host "Ensuring module '$name' is installed.." -ForegroundColor Yellow
 
   $installed = Get-Module -ListAvailable -Name $name |
-  Sort-Object Version -Descending |
-  Select-Object -First 1
+    Sort-Object Version -Descending |
+    Select-Object -First 1
 
-  if ($installed -and (!$version -or $installed.Version -ge [version]$version)) {
-    Write-Output "    -> OK (found $($installed.Version))"
+  # ---- Determine whether current install satisfies the requirement ----
+  $satisfied = $false
+  if ($installed -and -not $Force) {
+    if ($exactVer) {
+      $satisfied = $installed.Version -eq $exactVer
+    }
+    elseif ($minVer) {
+      $satisfied = $installed.Version -ge $minVer
+    }
+    # No version constraint → latest is always acceptable
+  }
+
+  if ($satisfied) {
+    Write-Host "    -> OK (found $($installed.Version))" -ForegroundColor Green
     continue
   }
 
-  $params = @{
-    Name         = $name
-    Scope        = 'CurrentUser'
-    Force        = $true
+  # ---- Resolve target version ----
+  if ($exactVer) {
+    $targetVer = $exactVer
+  }
+  elseif ($minVer) {
+    # Install the exact minimum version from the manifest. The satisfaction
+    # check above uses -ge so newer compatible versions already installed
+    # are accepted (not downgraded).
+    $targetVer = $minVer
+  }
+  else {
+    $target = Find-Module -Name $name |
+      Sort-Object Version -Descending |
+      Select-Object -First 1
+    if (-not $target) {
+      Write-Host "    -> '$name' not found in gallery." -ForegroundColor Red
+      continue
+    }
+    $targetVer = $target.Version
+  }
+
+  Write-Host "    -> Installing $name $targetVer ..." -ForegroundColor Yellow
+
+  $installParams = @{
+    Name = $name
+    RequiredVersion = $targetVer.ToString()
+    Scope = 'CurrentUser'
+    Force = $true
     AllowClobber = $true
+    SkipPublisherCheck = $true
   }
 
-  if ($version) { $params['RequiredVersion'] = $version }
-  if (-not $Force) {
-    Write-Host "    -> Installing module: $name at version: $version (use -Force to skip prompts)" -ForegroundColor Yellow
-  }
-
-  Install-Module @params
+  Install-Module @installParams
+  Write-Host "    -> Installed $name $targetVer" -ForegroundColor Green
 }
 
 # ---------------------------------------------------------------
-
 Write-Host "Successfully processed all RequiredModules!" -ForegroundColor Yellow

@@ -61,6 +61,12 @@ $module = Join-Path $root 'lib/winkit.psm1'
 Import-Module $module -Force
 # -----------------------------------------------------------------------------
 
+# Elevation guard: -Scope Machine requires admin
+if ($Scope -eq 'Machine' -and -not (Test-Elevation)) {
+  Write-Error '-Scope Machine requires administrator privileges. Use -Scope User (default) for per-user PATH.'
+  exit 1
+}
+
 if ($DryRun) {
   $WhatIfPreference = $true
   Write-Log -Message "DRY RUN - PATH will not be modified`n" -Color Yellow

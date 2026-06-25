@@ -65,6 +65,9 @@ For more information on PowerShell itself, refer to Microsoft's official [PowerS
 # enable the Windows Sandbox feature
 .\scripts\Enable-WindowsSandbox.ps1
 
+# 'sudo' usage example, if not using sudo.ps1 (from microsoft/sudo)
+sudo pwsh -File .\scripts\Install-WindowsUpdates.ps1 -Profile Recommended -DryRun
+
 # display full parameter documentation
 help .\scripts\Configure-Privacy.ps1
 ```
@@ -105,6 +108,7 @@ _Assets provided by:_ **[Microsoft Corporation][microsoft]**
 [psgallery_package]: https://www.powershellgallery.com/packages/winkit
 
 <!-- Third-party -->
+
 [semantic_release]: https://semantic-release.org/
 [renovate]: https://renovatebot.com/
 [precommit]: https://pre-commit.com/

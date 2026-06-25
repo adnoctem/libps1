@@ -1,4 +1,5 @@
 #Requires -Version 5.0
+#Requires -RunAsAdministrator
 
 <#
 .SYNOPSIS
@@ -63,11 +64,6 @@ if (Get-Command pwsh -ErrorAction SilentlyContinue) {
   Add-OperationResult -Results $_results -Target 'PowerShellCore' -Source 'Winget' -Action 'Install' -Status 'Skipped' -Detail 'AlreadyInstalled'
   if ($PassThru -or $DryRun) { $_results }
   exit 0
-}
-
-if (-not (Read-ProcessElevation)) {
-  Write-Log -Message 'Administrator privileges required to install PowerShell 7.' -Color Red
-  exit 1
 }
 
 if ($DryRun) {

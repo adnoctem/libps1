@@ -1,5 +1,6 @@
 #Requires -Version 2.0
 #Requires -Module ActiveDirectory
+#Requires -RunAsAdministrator
 
 <#
 .SYNOPSIS

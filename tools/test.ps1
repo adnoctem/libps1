@@ -17,8 +17,8 @@
   Runs all tests in the tests directory.
 
 .EXAMPLE
-  PS> ./test.ps1 -Path ./tests/user.ps1
-  Runs only the user.ps1 test file.
+PS> ./test.ps1 -Path ./tests/user.Tests.ps1
+Runs only the user.Tests.ps1 test file.
 
 .LINK
   https://github.com/adnoctem/winkit
@@ -35,17 +35,31 @@ param (
 
 $ErrorActionPreference = 'Stop'
 
-if (-not (Get-Module -ListAvailable -Name Pester)) {
-  Write-Error 'Pester is not installed. Install it with: Install-Module Pester -Force'
+$pester = Get-Module -ListAvailable -Name Pester |
+  Sort-Object Version -Descending |
+  Select-Object -First 1
+
+if (-not $pester) {
+  Write-Error 'Pester is not installed. Run .\winkit.ps1 init to install dependencies.'
+  exit 1
+}
+
+if ($pester.Version -lt [version]'5.0.0') {
+  Write-Error "Pester $($pester.Version) is too old. Run '.\winkit.ps1 init -Force' to upgrade to 5.0.0+."
   exit 1
 }
 
 Import-Module Pester -MinimumVersion 5.0.0 -ErrorAction Stop
 
-$config = [PesterConfiguration]::Default
-$config.Run.Path = $Path
-$config.Run.PassThru = $true
-$config.Output.Verbosity = 'Detailed'
+$config = [PesterConfiguration]@{
+  Run = @{
+    Path = $Path
+    PassThru = $true
+  }
+  Output = @{
+    Verbosity = 'Detailed'
+  }
+}
 
 $result = Invoke-Pester -Configuration $config
 

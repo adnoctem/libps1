@@ -82,7 +82,11 @@ param (
 
   [Parameter(Mandatory = $false)]
   [switch]
-  $PassThru
+  $PassThru,
+
+  # Internal: set automatically on elevated re-launch. Not for direct use.
+  [switch]
+  $Elevated
 )
 
 # ---- Module import -----------------------------------------------------------
@@ -90,6 +94,13 @@ $root = Split-Path $PSScriptRoot -Parent
 $module = Join-Path $root 'lib/winkit.psm1'
 Import-Module $module -Force
 # -----------------------------------------------------------------------------
+
+if (-not (Test-Elevation)) {
+  Request-AdministratorPrivilege `
+    -BoundParameters    $PSBoundParameters `
+    -ArgumentList       $args `
+    -IsElevatedRelaunch:$Elevated
+}
 
 if ($DryRun) {
   $WhatIfPreference = $true

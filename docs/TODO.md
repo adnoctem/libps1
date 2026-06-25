@@ -2,13 +2,13 @@
 
 ## ➕ Additions
 
-- [X] Add [PSScriptAnalyzer](https://github.com/PowerShell/PSScriptAnalyzer)
+- [x] Add [PSScriptAnalyzer](https://github.com/PowerShell/PSScriptAnalyzer)
 - [ ] Add [Pester](https://pester.dev/)
 - [ ] Add scripts to mitigate [Public Firewall Profile Bug in Defender 2025](https://jans.cloud/2025/03/unidentified-network-public-firewall-profile-bei-windows-server-2025-domain-controller/)
 - [ ] Add scripts for [Terminal Server configuration](https://www.server-world.info/en/note?os=Windows_Server_2025&p=remotedesktop&f=1) and the associated [Defender rules](https://gist.github.com/asheroto/530748b3bf0528cc4805d652b612f81f)
-- [X] Create [WOL-tooling](https://www.pdq.com/blog/wake-on-lan-wol-magic-packet-powershell/)
-- [X] Create a dowloader for [VC++ Redistributables](https://learn.microsoft.com/de-de/cpp/windows/latest-supported-vc-redist?view=msvc-170)
-- [X] [How to set return type in PowerShell](https://stackoverflow.com/questions/64891846/specify-function-return-type)
+- [x] Create [WOL-tooling](https://www.pdq.com/blog/wake-on-lan-wol-magic-packet-powershell/)
+- [x] Create a dowloader for [VC++ Redistributables](https://learn.microsoft.com/de-de/cpp/windows/latest-supported-vc-redist?view=msvc-170)
+- [x] [How to set return type in PowerShell](https://stackoverflow.com/questions/64891846/specify-function-return-type)
 
 ## ✏️ Planned Changes
 

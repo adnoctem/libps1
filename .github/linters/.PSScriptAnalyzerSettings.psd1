@@ -1,1 +1,0 @@
-./PSScriptAnalyzerSettings.psd1

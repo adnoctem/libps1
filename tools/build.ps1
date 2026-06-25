@@ -15,8 +15,10 @@
     dist/winkit.zip
     dist/winkit.tar.gz
 
-  Existing archives with the same names are overwritten. The temporary staging
-  directory is created under dist and removed after the archives are produced.
+  Existing archives with the same names are overwritten. Archives are produced
+  directly from the source directories — no staging copy is made, which avoids
+  the file-handle contention that can occur when cleaning up a staging folder
+  immediately after an archiver has read from it.
 
 .PARAMETER OutputDirectory
   Directory where archives are written. Defaults to the repository dist folder.
@@ -62,24 +64,18 @@ $ErrorActionPreference = 'Stop'
 
 $repositoryRoot = $ExecutionContext.SessionState.Path.GetUnresolvedProviderPathFromPSPath((Split-Path -Path $PSScriptRoot -Parent))
 $outputPath = $ExecutionContext.SessionState.Path.GetUnresolvedProviderPathFromPSPath($OutputDirectory)
-$stagingPath = Join-Path -Path $outputPath -ChildPath "_staging-$Name"
 $zipPath = Join-Path -Path $outputPath -ChildPath "$Name.zip"
 $tarGzPath = Join-Path -Path $outputPath -ChildPath "$Name.tar.gz"
 
-function Copy-BuildDirectory {
-  param (
-    [Parameter(Mandatory = $true)]
-    [string]$Source,
-
-    [Parameter(Mandatory = $true)]
-    [string]$Destination
-  )
-
-  if (-not (Test-Path -LiteralPath $Source -PathType Container)) {
-    throw "Required build source directory not found: $Source"
+# The two source directories that make up a bundle. Validated up front so a
+# missing directory fails before any archive work begins.
+$sourceDirs = 'lib', 'scripts'
+$sourcePaths = foreach ($dir in $sourceDirs) {
+  $path = Join-Path -Path $repositoryRoot -ChildPath $dir
+  if (-not (Test-Path -LiteralPath $path -PathType Container)) {
+    throw "Required build source directory not found: $path"
   }
-
-  Copy-Item -LiteralPath $Source -Destination $Destination -Recurse -Force
+  $path
 }
 
 function Clear-BuildPath {
@@ -97,41 +93,32 @@ if (-not (Test-Path -LiteralPath $outputPath -PathType Container)) {
   New-Item -Path $outputPath -ItemType Directory -Force | Out-Null
 }
 
-try {
-  Clear-BuildPath -Path $stagingPath
-  New-Item -Path $stagingPath -ItemType Directory -Force | Out-Null
-
-  Copy-BuildDirectory -Source (Join-Path -Path $repositoryRoot -ChildPath 'lib') -Destination $stagingPath
-  Copy-BuildDirectory -Source (Join-Path -Path $repositoryRoot -ChildPath 'scripts') -Destination $stagingPath
-
-  if ($Format -eq 'Both' -or $Format -eq 'Zip') {
-    if ($PSCmdlet.ShouldProcess($zipPath, 'Create ZIP archive')) {
-      Clear-BuildPath -Path $zipPath
-      Compress-Archive -Path (Join-Path -Path $stagingPath -ChildPath 'lib'), (Join-Path -Path $stagingPath -ChildPath 'scripts') -DestinationPath $zipPath -Force
-      Write-Output "Built: $zipPath"
-    }
-  }
-
-  if ($Format -eq 'Both' -or $Format -eq 'TarGz') {
-    $tarCommand = Get-Command -Name tar -ErrorAction SilentlyContinue
-    if (-not $tarCommand) {
-      throw 'tar was not found on PATH. Build the ZIP archive instead or install a tar-compatible tool.'
-    }
-
-    if ($PSCmdlet.ShouldProcess($tarGzPath, 'Create tar.gz archive')) {
-      Clear-BuildPath -Path $tarGzPath
-      Push-Location -LiteralPath $stagingPath
-      try {
-        & $tarCommand.Source -czf $tarGzPath lib scripts
-      }
-      finally {
-        Pop-Location
-      }
-
-      Write-Output "Built: $tarGzPath"
-    }
+if ($Format -eq 'Both' -or $Format -eq 'Zip') {
+  if ($PSCmdlet.ShouldProcess($zipPath, 'Create ZIP archive')) {
+    Clear-BuildPath -Path $zipPath
+    # Compress-Archive accepts multiple -Path roots and preserves each top-level
+    # directory name, so 'lib' and 'scripts' land in the archive exactly as they
+    # are on disk — no staging copy needed.
+    Compress-Archive -Path $sourcePaths -DestinationPath $zipPath -Force
+    Write-Output "Built: $zipPath"
   }
 }
-finally {
-  Clear-BuildPath -Path $stagingPath
+
+if ($Format -eq 'Both' -or $Format -eq 'TarGz') {
+  $tarCommand = Get-Command -Name tar -ErrorAction SilentlyContinue
+  if (-not $tarCommand) {
+    throw 'tar was not found on PATH. Build the ZIP archive instead or install a tar-compatible tool.'
+  }
+
+  if ($PSCmdlet.ShouldProcess($tarGzPath, 'Create tar.gz archive')) {
+    Clear-BuildPath -Path $tarGzPath
+    # -C changes tar's working directory to the repo root before archiving, so
+    # the stored paths are 'lib/...' and 'scripts/...' rather than absolute or
+    # deeply-nested. No staging copy and no Push-Location needed.
+    & $tarCommand.Source -C $repositoryRoot -czf $tarGzPath $sourceDirs
+    if ($LASTEXITCODE -ne 0) {
+      throw "tar exited with code $LASTEXITCODE while creating $tarGzPath."
+    }
+    Write-Output "Built: $tarGzPath"
+  }
 }

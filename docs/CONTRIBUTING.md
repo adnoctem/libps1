@@ -17,12 +17,12 @@ Additional aliases recognised for this command are `initialize`, `setup`, and `b
 
 The launcher maps short, familiar command names to the scripts located in the [`tools/`](../tools) directory:
 
-| Command | Aliases | Target | Purpose |
-|---|---|---|---|
-| `init` | `initialize`, `setup`, `bootstrap` | `tools/initialize.ps1` | Install required PowerShell modules |
-| `format` | `fmt`, `fix` | `tools/format.ps1` | Format all PowerShell sources with PSScriptAnalyzer |
-| `lint` | `check`, `analyze` | `tools/lint.ps1` | Run PSScriptAnalyzer rule checks |
-| `build` | `bundle`, `package` | `tools/build.ps1` | Create distribution archives |
+| Command  | Aliases                            | Target                 | Purpose                                             |
+| -------- | ---------------------------------- | ---------------------- | --------------------------------------------------- |
+| `init`   | `initialize`, `setup`, `bootstrap` | `tools/initialize.ps1` | Install required PowerShell modules                 |
+| `format` | `fmt`, `fix`                       | `tools/format.ps1`     | Format all PowerShell sources with PSScriptAnalyzer |
+| `lint`   | `check`, `analyze`                 | `tools/lint.ps1`       | Run PSScriptAnalyzer rule checks                    |
+| `build`  | `bundle`, `package`                | `tools/build.ps1`      | Create distribution archives                        |
 
 Any arguments supplied after the command are forwarded directly to the underlying script. For example, `.\winkit.ps1 format -Check` is equivalent to running `.\tools\format.ps1 -Check`.
 

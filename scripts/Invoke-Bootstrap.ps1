@@ -68,7 +68,11 @@ param (
 
   [Parameter(Mandatory = $false)]
   [switch]
-  $PassThru
+  $PassThru,
+
+  # Internal: set automatically on elevated re-launch. Not for direct use.
+  [switch]
+  $Elevated
 )
 
 # ---- Module import -----------------------------------------------------------
@@ -77,14 +81,16 @@ $module = Join-Path $root 'lib/winkit.psm1'
 Import-Module $module -Force
 # -----------------------------------------------------------------------------
 
+if (-not (Test-Elevation)) {
+  Request-AdministratorPrivilege `
+    -BoundParameters    $PSBoundParameters `
+    -ArgumentList       $args `
+    -IsElevatedRelaunch:$Elevated
+}
+
 if ($DryRun) {
   $WhatIfPreference = $true
   Write-Log -Message "DRY RUN - no changes will be applied`n" -Color Yellow
-}
-
-if (-not (Read-ProcessElevation)) {
-  Write-Log -Message 'Administrator privileges required for machine bootstrap.' -Color Red
-  exit 1
 }
 
 $_results = New-Object System.Collections.ArrayList

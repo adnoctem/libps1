@@ -106,6 +106,12 @@ $module = Join-Path $root 'lib/winkit.psm1'
 Import-Module $module -Force
 # -----------------------------------------------------------------------------
 
+# Elevation guard: Windows Update operations require admin (StoreOnly is the exception)
+if ($Profile -ne 'StoreOnly' -and -not (Test-Elevation)) {
+  Write-Error 'Windows Update operations require administrator privileges. Use -Profile StoreOnly for app-only updates without elevation.'
+  exit 1
+}
+
 if ($DryRun) {
   $WhatIfPreference = $true
   Write-Log -Message "DRY RUN - no updates will be installed`n" -Color Yellow
@@ -144,11 +150,6 @@ if ($Profile -ne 'StoreOnly' -and -not (Test-PSWindowsUpdateAvailable)) {
 
 # ---- Windows Update pass ----------------------------------------------------
 if ($Profile -ne 'StoreOnly') {
-  if (-not (Read-ProcessElevation)) {
-    Write-Log -Message 'Administrator privileges required for Windows Update operations.' -Color Red
-    exit 1
-  }
-
   Write-Log -Message "=== Windows Update (profile: $Profile) ===" -Color Cyan
 
   $_categoryFilter = if ($Profile -eq 'Recommended') {

@@ -93,6 +93,12 @@ $module = Join-Path $root 'lib/winkit.psm1'
 Import-Module $module -Force
 # -----------------------------------------------------------------------------
 
+# Elevation guard: -SysPrep mounts the default user hive (requires admin)
+if ($SysPrep -and -not (Test-Elevation)) {
+  Write-Error '-SysPrep requires administrator privileges. Run elevated or omit -SysPrep for current-user only.'
+  exit 1
+}
+
 if ($DryRun) {
   $WhatIfPreference = $true
   Write-Log -Message "DRY RUN - no changes will be applied`n" -Color Yellow

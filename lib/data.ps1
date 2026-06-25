@@ -103,8 +103,11 @@ function Merge-ObjectArrays {
 
     if (-not $_match) { continue }
 
-    # Only transfer keys that already exist on the base object
-    foreach ($_key in $_match.Keys) {
+    # Only transfer keys that already exist on the base object.
+    # Copy keys to a static array to avoid "collection modified" errors
+    # when the assignment below mutates the same hashtable.
+    $matchKeys = @($_match.Keys)
+    foreach ($_key in $matchKeys) {
       if ($_override.PSObject.Properties.Name -contains $_key) {
         $_match[$_key] = $_override.$_key
       }

@@ -8,7 +8,7 @@ document.
 
 winkit already writes registry values directly via `Set-RegistryValue`. That
 works correctly for all policy paths (`Software\Policies\...`) at the
-*application* level — Chrome, Firefox, Office, Windows, etc. all read the
+_application_ level — Chrome, Firefox, Office, Windows, etc. all read the
 same registry locations regardless of who wrote them.
 
 The reason to layer LGPO on top is **auditability**, specifically for the
@@ -162,7 +162,7 @@ doesn't fit cleanly in the `.txt` header. Example:
 
 The policy text files are **value-level** domain compatible — the registry
 paths (`Software\Policies\...`) are identical whether applied locally or by
-a domain GPO. The *delivery* differs:
+a domain GPO. The _delivery_ differs:
 
 - **Local apply:** `LGPO.exe /t source.txt` writes directly to local
   `Registry.pol`.
@@ -243,12 +243,14 @@ Two strategies for authoritative apply:
 
 - **Wipe-then-apply:** before applying, delete the local policy store,
   then apply the full source set:
+
   ```powershell
   Remove-Item "$env:SystemRoot\System32\GroupPolicy\Machine\Registry.pol" -Force
   Remove-Item "$env:SystemRoot\System32\GroupPolicy\User\Registry.pol"    -Force
   Invoke-LGPO -PolicyPath <file.txt>
   gpupdate /force
   ```
+
   Clean and predictable. Suitable for image builds and maintenance windows.
 
 - **Explicit DELETE entries:** when retiring a policy, change its block to
@@ -306,8 +308,8 @@ Combined with the structured return object's timestamp, you can answer
 
 ### Intent vs observation
 
-The `.txt` files in git are the *intent*. `gpresult` output post-apply is
-the *observation*. Proving they match is the *control*. The planned
+The `.txt` files in git are the _intent_. `gpresult` output post-apply is
+the _observation_. Proving they match is the _control_. The planned
 (audit-report generator) compares parsed `.txt` against parsed
 `Get-LGPOAppliedState` output to produce a configured-vs-observed diff.
 

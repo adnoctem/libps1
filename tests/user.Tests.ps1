@@ -1,12 +1,11 @@
 #Requires -Version 5.1
 #Requires -Modules @{ ModuleName = 'Pester'; ModuleVersion = '5.0.0' }
 
+BeforeAll {
+  . $PSScriptRoot/../lib/user.ps1
+}
+
 Describe 'Get-UserInfo' {
-
-  BeforeAll {
-    . $PSScriptRoot/../lib/user.ps1
-  }
-
   It 'returns a hashtable' {
     $result = Get-UserInfo
     $result | Should -BeOfType [hashtable]
@@ -34,11 +33,6 @@ Describe 'Get-UserInfo' {
 }
 
 Describe 'Get-UserSID' {
-
-  BeforeAll {
-    . $PSScriptRoot/../lib/user.ps1
-  }
-
   It 'returns a SID string for the current user' {
     $username = (Get-UserInfo).UserName
     $result = Get-UserSID -UserName $username

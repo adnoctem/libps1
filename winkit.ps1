@@ -50,32 +50,35 @@
   License: MIT
 #>
 
-[CmdletBinding()]
+# NOTE: deliberately NOT using [CmdletBinding()] here. This is a pass-through
+# launcher: dropping advanced-function mode lets $args collect everything after
+# the command name, which then splats to the target with named parameters intact.
 param (
-  [Parameter(Position = 0, Mandatory = $true)]
-  [string]$Command,
-
-  [Parameter(ValueFromRemainingArguments = $true)]
-  [string[]]$Remaining
+  [string]$Command
 )
 
+if (-not $Command) {
+  Write-Error 'A command is required. Available: init(ialize), setup, bootstrap, build, bundle, package, format, fmt, fix, lint, check, analyze, test, pester'
+  exit 1
+}
+
 $scriptMap = @{
-  'init'       = 'initialize'
+  'init' = 'initialize'
   'initialize' = 'initialize'
-  'setup'      = 'initialize'
-  'bootstrap'  = 'initialize'
-  'build'      = 'build'
-  'bundle'     = 'build'
-  'package'    = 'build'
-  'format'     = 'format'
-  'fmt'        = 'format'
-  'fix'        = 'format'
-  'lint'       = 'lint'
-  'check'      = 'lint'
-  'analyze'    = 'lint'
-  'test'       = 'test'
-  'tests'      = 'test'
-  'pester'     = 'test'
+  'setup' = 'initialize'
+  'bootstrap' = 'initialize'
+  'build' = 'build'
+  'bundle' = 'build'
+  'package' = 'build'
+  'format' = 'format'
+  'fmt' = 'format'
+  'fix' = 'format'
+  'lint' = 'lint'
+  'check' = 'lint'
+  'analyze' = 'lint'
+  'test' = 'test'
+  'tests' = 'test'
+  'pester' = 'test'
 }
 
 $commandKey = $Command.ToLowerInvariant()
@@ -93,4 +96,5 @@ if (-not (Test-Path -LiteralPath $scriptPath)) {
   exit 1
 }
 
-& $scriptPath @Remaining
+& $scriptPath @args
+exit $LASTEXITCODE
